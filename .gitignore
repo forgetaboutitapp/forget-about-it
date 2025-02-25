@@ -43,3 +43,11 @@ app.*.map.json
 frontend/android/app/debug
 frontend/android/app/profile
 frontend/android/app/release
+
+server/*.exe
+server/provision
+
+# Autogenerate on CI/CD server
+server/pkg/sql_queries
+
+server/pkg/sql_queries
