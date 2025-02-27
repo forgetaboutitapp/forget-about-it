@@ -51,3 +51,6 @@ server/provision
 server/pkg/sql_queries
 
 server/pkg/sql_queries
+**/*.freezed.dart
+
+**/*.g.dart
