@@ -9,3 +9,6 @@ SELECT user_uuid FROM Users where role=?;
 
 -- name: FindAdminLogins :many
 SELECT DISTINCT Logins.user_uuid FROM Logins JOIN Users ON Logins.user_uuid = Users.user_uuid where Users.role=0;
+
+-- name: FindUserByLogin :many
+SELECT DISTINCT Users.user_uuid FROM Users JOIN Logins ON Logins.user_uuid = Users.user_uuid WHERE Logins.login_uuid = ?;

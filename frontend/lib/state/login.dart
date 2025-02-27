@@ -40,11 +40,14 @@ class Login extends _$Login {
       http.Client client, Uri remoteHost, IList<String> twelveWords) async {
     final v = await client.post(
       Uri(
-        fragment: remoteHost.fragment,
+        scheme: remoteHost.scheme,
         port: remoteHost.port,
         host: remoteHost.host,
         path: '/api/v0/get-token/by-twelve-words',
       ),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
       body: jsonEncode({'twelve-words': twelveWords.toList()}),
     );
     Map<String, dynamic> json = jsonDecode(v.body);
@@ -52,6 +55,7 @@ class Login extends _$Login {
       return false;
     }
     await sharedPreferences.setString('LOGGED_IN_KEY', json['token']);
+    ref.invalidateSelf();
     return true;
   }
 }
