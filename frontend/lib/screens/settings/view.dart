@@ -1,5 +1,4 @@
 import 'package:app/screens/settings/qr_dialog.dart';
-import 'package:app/state/login.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -10,16 +9,17 @@ import 'package:http/http.dart' as http;
 class SettingsScreen extends HookConsumerWidget {
   static const location = '/settings';
   final http.Client client;
-  const SettingsScreen({super.key, required this.client});
+  final String token;
+  final String remoteHost;
+  const SettingsScreen({
+    super.key,
+    required this.client,
+    required this.token,
+    required this.remoteHost,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final potentialToken = ref.watch(loginProvider);
-    if (potentialToken is! LoggedIn) {
-      Navigator.pushReplacementNamed(context, '/login');
-      return Container();
-    }
-    final token = potentialToken.id;
     var remoteDevices = useState([('Real Root', '1/1/2020', '')].toIList());
     return Scaffold(
       appBar: AppBar(
@@ -102,9 +102,7 @@ class SettingsScreen extends HookConsumerWidget {
                   final p = await showDialog(
                     context: context,
                     builder: (context) => QRDialog(
-                        token: token,
-                        client: client,
-                        remoteHost: 'http://127.0.0.1:8080'),
+                        token: token, client: client, remoteHost: remoteHost),
                   );
                 },
               ),

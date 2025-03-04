@@ -70,7 +70,10 @@ class QRDialog extends HookWidget {
               child: switch (show12Words.value) {
                 LoginMethod.twelveWords =>
                   TwelveWordView(twelveWords: decode['mnemonic']),
-                LoginMethod.camera => QrImageViewer(uuid: decode['newUUID']),
+                LoginMethod.camera => QrImageViewer(
+                    uuid: decode['newUUID'],
+                    remoteHost: remoteHost,
+                  ),
                 LoginMethod.token =>
                   TokenView(remoteHost: remoteHost, uuid: decode['newUUID']),
               },
@@ -183,11 +186,12 @@ class TwelveWordView extends StatelessWidget {
 
 class QrImageViewer extends StatelessWidget {
   final String uuid;
-
-  const QrImageViewer({super.key, required this.uuid});
+  final String remoteHost;
+  const QrImageViewer(
+      {super.key, required this.uuid, required this.remoteHost});
   @override
   Widget build(BuildContext context) => QrImageView(
-        data: 'http://localhost:8080;$uuid',
+        data: '$remoteHost;$uuid',
         version: QrVersions.auto,
         size: 400,
         gapless: false,

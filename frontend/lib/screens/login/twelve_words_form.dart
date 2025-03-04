@@ -140,11 +140,11 @@ class TwelveWordsForm extends HookConsumerWidget {
                     .length ==
                 12,
             remoteURLString: urlController.value.text,
-            toRun: (uri) async => await ref.read(loginProvider.notifier).update(
-                  client,
-                  uri,
-                  TwelveWords(twelveWords: twelveWordHook.value),
-                ),
+            toRun: (uri) async => await update(
+              client,
+              uri,
+              TwelveWords(twelveWords: twelveWordHook.value),
+            ),
           ),
         )
       ],

@@ -54,18 +54,19 @@ class TokenLogin extends HookConsumerWidget {
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: LoginButton(
-                shouldEnable: tokenController.text.trim() != '' &&
-                    urlController.text.trim() != '',
-                remoteURLString: urlController.text,
-                toRun: (uri) async {
-                  return await ref.read(loginProvider.notifier).update(
-                        client,
-                        uri,
-                        Token(
-                          token: tokenController.text.trim(),
-                        ),
-                      );
-                }),
+              shouldEnable: tokenController.text.trim() != '' &&
+                  urlController.text.trim() != '',
+              remoteURLString: urlController.text,
+              toRun: (uri) async {
+                return await update(
+                  client,
+                  uri,
+                  Token(
+                    token: tokenController.text.trim(),
+                  ),
+                );
+              },
+            ),
           )
         ],
       ),
