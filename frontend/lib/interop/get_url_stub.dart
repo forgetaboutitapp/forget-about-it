@@ -1,1 +1,1 @@
-String? getCurrentLocation() => throw UnimplementedError();
+String? getCurrentLocation() => null;

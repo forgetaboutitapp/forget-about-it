@@ -4,21 +4,19 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"path"
 	"slices"
 	"strconv"
 	"strings"
-	"time"
 
 	_ "modernc.org/sqlite"
 
 	"github.com/forgetaboutitapp/forget-about-it/server"
-	"github.com/forgetaboutitapp/forget-about-it/server/pkg/sql_queries"
-	uuidUtils "github.com/forgetaboutitapp/forget-about-it/server/pkg/uuid_utils"
-	"github.com/google/uuid"
 )
 
 func OpenDatabase(ctx context.Context) (*sql.DB, error) {
+	slog.Info("Opening DB", "db file", server.DBFilename)
 	db, err := sql.Open("sqlite", server.DBFilename)
 	if err != nil {
 		return nil, fmt.Errorf("cannot open sqlite file: %w", err)
@@ -108,43 +106,4 @@ func DoMigrations(ctx context.Context, db *sql.DB, originalVersion int) (int, er
 	}
 	return v, nil
 
-}
-
-func AddUser(q *sql_queries.Queries) (string, error) {
-	userUUID := uuid.New()
-
-	q.AddUser(context.Background(), sql_queries.AddUserParams{
-		UserUuid: userUUID.String(),
-		Role:     0,
-	})
-
-	loginUuid := uuid.New()
-	q.AddLogin(context.Background(), sql_queries.AddLoginParams{
-		LoginUuid:         loginUuid.String(),
-		UserUuid:          userUUID.String(),
-		DeviceDescription: "Initial Device",
-	})
-	mnemonic, err := uuidUtils.NewMnemonicFromUuid(loginUuid)
-	if err != nil {
-		return "", fmt.Errorf("cannot create mnemonic: %w", err)
-	}
-	return mnemonic, nil
-}
-
-func AddLogin(ctx context.Context, q *sql_queries.Queries, id string) (string, error) {
-	userUUID, err := uuid.Parse(id)
-	if err != nil {
-		return "", fmt.Errorf("user id (%s) is not a valid uuid: %w", id, err)
-	}
-	newLoginUuid := uuid.New()
-	q.AddLogin(context.Background(), sql_queries.AddLoginParams{
-		LoginUuid:         newLoginUuid.String(),
-		UserUuid:          userUUID.String(),
-		DeviceDescription: fmt.Sprintf("Added on %s", time.Now().UTC().Format(time.DateTime)),
-	})
-	m, err := uuidUtils.NewMnemonicFromUuid(newLoginUuid)
-	if err != nil {
-		return "", fmt.Errorf("cannot create a 12 word mnemonic from %s: %w", id, err)
-	}
-	return m, nil
 }

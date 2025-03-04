@@ -10,3 +10,5 @@ class TwelveWordKeys with _$TwelveWordKeys {
 
 const twelveWordLoginButton = 10001;
 const loginURLKey = 10002;
+const loginURLKeyInToken = 10003;
+const loginTokenKeyInToken = 10004;

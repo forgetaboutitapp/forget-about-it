@@ -7,10 +7,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'screens/login/view.dart';
 import 'screens/home/view.dart';
+import 'screens/settings/view.dart';
 
 late final SharedPreferences sharedPreferences;
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   sharedPreferences = await SharedPreferences.getInstance();
   runApp(
     ProviderScope(
@@ -30,7 +32,7 @@ class MainApp extends HookConsumerWidget {
           case NoLogin():
             return LoginScreen.location;
           case LoggedIn():
-            return HomeScreen.location;
+            return state.fullPath;
         }
       },
       routes: [
@@ -41,6 +43,10 @@ class MainApp extends HookConsumerWidget {
         GoRoute(
           path: LoginScreen.location,
           builder: (context, state) => LoginScreen(client: http.Client()),
+        ),
+        GoRoute(
+          path: SettingsScreen.location,
+          builder: (context, state) => SettingsScreen(client: http.Client()),
         ),
       ],
     );
