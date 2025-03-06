@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/forgetaboutitapp/forget-about-it/server"
-	"github.com/forgetaboutitapp/forget-about-it/server/pkg/dbUtils"
+	dbUtils "github.com/forgetaboutitapp/forget-about-it/server/pkg/db_utils"
 	"github.com/forgetaboutitapp/forget-about-it/server/pkg/sql_queries"
 	uuidUtils "github.com/forgetaboutitapp/forget-about-it/server/pkg/uuid_utils"
 	"github.com/google/uuid"
@@ -38,7 +38,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Printf("Your 12 word mnemonic is:\n%s", mnemonic)
+		fmt.Printf("Your 12 word mnemonic is: %s\n", mnemonic)
 		fmt.Printf("Your copyable login is: %s\n", id)
 	}
 }

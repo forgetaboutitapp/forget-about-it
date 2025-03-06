@@ -26,6 +26,7 @@ func main() {
 	http.DefaultServeMux.Handle("/api/v0/secure/generate-new-token", secure.Server{Db: q, Next: secure.GenerateNewToken})
 	http.DefaultServeMux.Handle("/api/v0/secure/check-new-token", secure.Server{Db: q, Next: secure.CheckNewToken})
 	http.DefaultServeMux.Handle("/api/v0/secure/delete-new-token", secure.Server{Db: q, Next: secure.DeleteNewToken})
+	http.DefaultServeMux.Handle("/api/v0/secure/get-remote-settings", secure.Server{Db: q, Next: secure.GetRemoteSettings})
 	fmt.Println("Starting server")
 	corsOptions := cors.Options{
 		AllowPrivateNetwork: true,

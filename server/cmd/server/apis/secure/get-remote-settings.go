@@ -1,0 +1,53 @@
+package secure
+
+import (
+	"context"
+	"encoding/json"
+	"log/slog"
+	"net/http"
+	"time"
+
+	"github.com/google/uuid"
+)
+
+type RemoteDevice struct {
+	LastUsed  *int64 `json:"last-used,omitempty"`
+	Title     string `json:"title"`
+	DateAdded int64 `json:"date-added"`
+}
+
+type RemoteSettings struct {
+	RemoteDevices []RemoteDevice `json:"remote-devices,omitempty"`
+}
+
+func GetRemoteSettings(userid uuid.UUID, s Server, w http.ResponseWriter, r *http.Request) {
+	if userid == uuid.Nil {
+		panic("userid is empty")
+	}
+	timeoutContext, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+	slog.Info("userid", "userid", userid.String())
+	rows, err := s.Db.FindLoginIDByUser(timeoutContext, userid.String())
+	if err != nil {
+		slog.Error("can't find login by userid", "uuid", userid.String(), "err", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	settings := RemoteSettings{}
+	for _, row := range rows {
+		var lastUsedString *int64 = nil
+		if val, ok := row.Lastused.(int64); ok {
+			lastUsedString = &val
+		}
+		settings.RemoteDevices = append(settings.RemoteDevices, RemoteDevice{Title:row.DeviceDescription, LastUsed: lastUsedString, DateAdded: row.Created})
+	}
+	jsonVal, err := json.Marshal(settings)
+	if err != nil {
+		slog.Error("can't find logi by userid", "uuid", userid.String(), "err", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	slog.Info("Returning json", "json", string(jsonVal))
+	w.Write(jsonVal)
+
+}

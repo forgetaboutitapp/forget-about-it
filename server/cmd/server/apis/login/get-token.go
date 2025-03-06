@@ -79,6 +79,21 @@ func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	timeout, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+	slog.Info("Registering", "params", sql_queries.RegisterLoginParams{
+		LoginUuid:   token.String(),
+		CurrentTime: time.Now().Unix(),
+	})
+	err = s.Db.RegisterLogin(timeout, sql_queries.RegisterLoginParams{
+		LoginUuid:   token.String(),
+		CurrentTime: time.Now().Unix(),
+	})
+	if err != nil {
+		slog.Error("Unable to register login", "token", token, "err", err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+
 	w.WriteHeader(http.StatusOK)
 	b, err := json.Marshal(map[string]string{"token": token.String()})
 	if err != nil {
@@ -94,10 +109,14 @@ func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("about to look for the old key")
 	func() {
+		slog.Info("about to lock mutex")
 		server.MutexUsersWaiting.Lock()
 		defer server.MutexUsersWaiting.Unlock()
-
+		slog.Info("deleting users[0]", "users", users[0])
 		delete(server.UsersWaiting, uuid.MustParse(users[0]))
+		slog.Info("done deleting")
 
 	}()
+
+	slog.Info("Done")
 }

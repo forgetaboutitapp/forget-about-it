@@ -21,42 +21,59 @@ void main() async {
 }
 
 class MainApp extends HookConsumerWidget {
-  const MainApp({super.key});
+  MainApp({super.key});
+  final router = GoRouter(
+    refreshListenable: Hive.box(localSettingsHiveBox).listenable(),
+    redirect: (BuildContext context, GoRouterState state) async {
+      final settingsBox = Hive.box(localSettingsHiveBox);
+      if (settingsBox.get(localSettingsHiveLoginToken) == null) {
+        return LoginScreen.location;
+      } else if (state.fullPath != LoginScreen.location) {
+        return state.fullPath;
+      } else {
+        return HomeScreen.location;
+      }
+    },
+    routes: [
+      GoRoute(
+        path: HomeScreen.location,
+        builder: (context, state) => HomeScreen(),
+      ),
+      GoRoute(
+        path: LoginScreen.location,
+        builder: (context, state) => LoginScreen(client: http.Client()),
+      ),
+      GoRoute(
+        path: SettingsScreen.location,
+        builder: (context, state) => SettingsScreen(
+          client: http.Client(),
+          token:
+              Hive.box(localSettingsHiveBox).get(localSettingsHiveLoginToken),
+          remoteHost:
+              Hive.box(localSettingsHiveBox).get(localSettingsHiveRemoteHost),
+          curDarkMode: Hive.box(localSettingsHiveBox)
+              .get(localSettingsHiveDarkTheme, defaultValue: false),
+          switchDarkMode: (_) async {
+            final v = Hive.box(localSettingsHiveBox)
+                .get(localSettingsHiveDarkTheme, defaultValue: false);
+            await Hive.box(localSettingsHiveBox)
+                .put(localSettingsHiveDarkTheme, !v);
+          },
+        ),
+      ),
+    ],
+  );
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ValueListenableBuilder(
         valueListenable: Hive.box(localSettingsHiveBox).listenable(),
         builder: (context, settingsBox, w) {
-          final router = GoRouter(
-            redirect: (BuildContext context, GoRouterState state) async {
-              if (settingsBox.get(localSettingsHiveLoginToken) == null) {
-                return LoginScreen.location;
-              } else {
-                return state.fullPath;
-              }
-            },
-            routes: [
-              GoRoute(
-                path: HomeScreen.location,
-                builder: (context, state) => HomeScreen(),
-              ),
-              GoRoute(
-                path: LoginScreen.location,
-                builder: (context, state) => LoginScreen(client: http.Client()),
-              ),
-              GoRoute(
-                path: SettingsScreen.location,
-                builder: (context, state) => SettingsScreen(
-                  client: http.Client(),
-                  token: settingsBox.get(localSettingsHiveLoginToken),
-                  remoteHost: settingsBox.get(localSettingsHiveRemoteHost),
-                ),
-              ),
-            ],
-          );
           return MaterialApp.router(
             debugShowCheckedModeBanner: false,
             routerConfig: router,
+            theme: settingsBox.get(localSettingsHiveDarkTheme) == true
+                ? ThemeData.dark(useMaterial3: true)
+                : ThemeData.light(useMaterial3: true),
           );
         });
   }

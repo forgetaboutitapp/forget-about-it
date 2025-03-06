@@ -7,7 +7,7 @@ CREATE TABLE Logins (
 );
 
 CREATE TABLE Logs_Logins (
-    login_uuid text,
-    current_time int,
+    login_uuid text not null,
+    current_time int not null,
     FOREIGN KEY (login_uuid) REFERENCES Logins(login_uuid)
 );
