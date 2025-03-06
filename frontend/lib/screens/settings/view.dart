@@ -32,20 +32,7 @@ class SettingsScreen extends HookConsumerWidget {
 
     final remoteSettings = ref.watch(remoteSettingsNotifierProvider);
     useEffect(() {
-      () async {
-        stillWaitingForRemoteServer.value = true;
-        final p = await ref
-            .read(remoteSettingsNotifierProvider.notifier)
-            .getData(remoteHost, token, client);
-        stillWaitingForRemoteServer.value = false;
-        if (p != null) {
-          stillWaitingForRemoteServer.value = false;
-          if (context.mounted) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(p.toString())));
-          }
-        }
-      }();
+      refresh(stillWaitingForRemoteServer, ref, context);
       return null;
     }, []);
     return Scaffold(
@@ -154,6 +141,10 @@ class SettingsScreen extends HookConsumerWidget {
                                     client: client,
                                     remoteHost: remoteHost),
                               );
+                              if (context.mounted) {
+                                refresh(
+                                    stillWaitingForRemoteServer, ref, context);
+                              }
                             },
                           ),
                         ],
@@ -173,5 +164,23 @@ class SettingsScreen extends HookConsumerWidget {
               ],
             ),
     );
+  }
+
+  void refresh(ValueNotifier<bool> stillWaitingForRemoteServer, WidgetRef ref,
+      BuildContext context) {
+    () async {
+      stillWaitingForRemoteServer.value = true;
+      final p = await ref
+          .read(remoteSettingsNotifierProvider.notifier)
+          .getData(remoteHost, token, client);
+      stillWaitingForRemoteServer.value = false;
+      if (p != null) {
+        stillWaitingForRemoteServer.value = false;
+        if (context.mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(p.toString())));
+        }
+      }
+    }();
   }
 }
