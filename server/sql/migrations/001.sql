@@ -1,5 +1,5 @@
 CREATE TABLE Users (
-    user_uuid text primary key,
-    role int NOT NULL,
-    created int NOT NULL
+    user_id integer primary key,
+    role integer NOT NULL,
+    created integer NOT NULL
 );

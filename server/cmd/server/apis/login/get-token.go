@@ -113,7 +113,7 @@ func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		server.MutexUsersWaiting.Lock()
 		defer server.MutexUsersWaiting.Unlock()
 		slog.Info("deleting users[0]", "users", users[0])
-		delete(server.UsersWaiting, uuid.MustParse(users[0]))
+		delete(server.UsersWaiting, users[0])
 		slog.Info("done deleting")
 
 	}()

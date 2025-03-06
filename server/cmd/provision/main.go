@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
+	"math"
+	"math/big"
 	"time"
 
 	"github.com/forgetaboutitapp/forget-about-it/server"
@@ -44,17 +47,20 @@ func main() {
 }
 
 func AddUser(q *sql_queries.Queries) (string, string, error) {
-	userUUID := uuid.New()
-
+	bigUserid, err := rand.Int(rand.Reader, big.NewInt(int64(math.MaxInt64)))
+	if err != nil {
+		return "", "", fmt.Errorf("unable to generate user: %w", err)
+	}
+	userid := bigUserid.Int64()
 	q.AddUser(context.Background(), sql_queries.AddUserParams{
-		UserUuid: userUUID.String(),
-		Role:     0,
+		UserID: userid,
+		Role:   0,
 	})
 
 	loginUuid := uuid.New()
 	q.AddLogin(context.Background(), sql_queries.AddLoginParams{
 		LoginUuid:         loginUuid.String(),
-		UserUuid:          userUUID.String(),
+		UserID:            userid,
 		DeviceDescription: "Initial Device",
 		Created:           time.Now().Unix(),
 	})
@@ -65,21 +71,18 @@ func AddUser(q *sql_queries.Queries) (string, string, error) {
 	return mnemonic, loginUuid.String(), nil
 }
 
-func AddLogin(ctx context.Context, q *sql_queries.Queries, id string) (string, string, error) {
-	userUUID, err := uuid.Parse(id)
-	if err != nil {
-		return "", "", fmt.Errorf("user id (%s) is not a valid uuid: %w", id, err)
-	}
+func AddLogin(ctx context.Context, q *sql_queries.Queries, id int64) (string, string, error) {
+
 	newLoginUuid := uuid.New()
 	q.AddLogin(context.Background(), sql_queries.AddLoginParams{
 		LoginUuid:         newLoginUuid.String(),
-		UserUuid:          userUUID.String(),
+		UserID:            id,
 		DeviceDescription: fmt.Sprintf("Added on %s", time.Now().UTC().Format(time.DateTime)),
 		Created:           time.Now().Unix(),
 	})
 	m, err := uuidUtils.NewMnemonicFromUuid(newLoginUuid)
 	if err != nil {
-		return "", "", fmt.Errorf("cannot create a 12 word mnemonic from %s: %w", id, err)
+		return "", "", fmt.Errorf("cannot create a 12 word mnemonic from %s: %w", newLoginUuid, err)
 	}
 	return m, newLoginUuid.String(), nil
 }

@@ -4,11 +4,10 @@ import (
 	"net/http"
 
 	"github.com/forgetaboutitapp/forget-about-it/server"
-	"github.com/google/uuid"
 	"golang.org/x/exp/slog"
 )
 
-func CheckNewToken(userid uuid.UUID, s Server, w http.ResponseWriter, r *http.Request) {
+func CheckNewToken(userid int64, s Server, w http.ResponseWriter, r *http.Request) {
 	server.MutexUsersWaiting.Lock()
 	defer server.MutexUsersWaiting.Unlock()
 	_, found := server.UsersWaiting[userid]

@@ -8,12 +8,11 @@ import (
 	"time"
 
 	"github.com/forgetaboutitapp/forget-about-it/server/pkg/sql_queries"
-	"github.com/google/uuid"
 )
 
 type Server struct {
 	Db   *sql_queries.Queries
-	Next func(token uuid.UUID, s Server, w http.ResponseWriter, r *http.Request)
+	Next func(token int64, s Server, w http.ResponseWriter, r *http.Request)
 }
 
 func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -50,5 +49,5 @@ func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		slog.Error("Unable to register login", "token", token, "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-	s.Next(uuid.MustParse(users[0]), s, w, r)
+	s.Next(users[0], s, w, r)
 }

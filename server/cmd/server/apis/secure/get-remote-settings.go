@@ -6,30 +6,28 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type RemoteDevice struct {
 	LastUsed  *int64 `json:"last-used,omitempty"`
 	Title     string `json:"title"`
-	DateAdded int64 `json:"date-added"`
+	DateAdded int64  `json:"date-added"`
 }
 
 type RemoteSettings struct {
 	RemoteDevices []RemoteDevice `json:"remote-devices,omitempty"`
 }
 
-func GetRemoteSettings(userid uuid.UUID, s Server, w http.ResponseWriter, r *http.Request) {
-	if userid == uuid.Nil {
+func GetRemoteSettings(userid int64, s Server, w http.ResponseWriter, r *http.Request) {
+	if userid == 0 {
 		panic("userid is empty")
 	}
 	timeoutContext, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
-	slog.Info("userid", "userid", userid.String())
-	rows, err := s.Db.FindLoginIDByUser(timeoutContext, userid.String())
+	slog.Info("userid", "userid", userid)
+	rows, err := s.Db.FindLoginIDByUser(timeoutContext, userid)
 	if err != nil {
-		slog.Error("can't find login by userid", "uuid", userid.String(), "err", err)
+		slog.Error("can't find login by userid", "uuid", userid, "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -39,11 +37,11 @@ func GetRemoteSettings(userid uuid.UUID, s Server, w http.ResponseWriter, r *htt
 		if val, ok := row.Lastused.(int64); ok {
 			lastUsedString = &val
 		}
-		settings.RemoteDevices = append(settings.RemoteDevices, RemoteDevice{Title:row.DeviceDescription, LastUsed: lastUsedString, DateAdded: row.Created})
+		settings.RemoteDevices = append(settings.RemoteDevices, RemoteDevice{Title: row.DeviceDescription, LastUsed: lastUsedString, DateAdded: row.Created})
 	}
 	jsonVal, err := json.Marshal(settings)
 	if err != nil {
-		slog.Error("can't find logi by userid", "uuid", userid.String(), "err", err)
+		slog.Error("can't find logi by userid", "uuid", userid, "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

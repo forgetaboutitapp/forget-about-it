@@ -15,7 +15,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func GenerateNewToken(userid uuid.UUID, s Server, w http.ResponseWriter, r *http.Request) {
+func GenerateNewToken(userid int64, s Server, w http.ResponseWriter, r *http.Request) {
 	newUUID := uuid.New()
 	slog.Info("About to get new mnemonic")
 	mnenmonic, err := uuidUtils.NewMnemonicFromUuid(newUUID)
@@ -36,7 +36,7 @@ func GenerateNewToken(userid uuid.UUID, s Server, w http.ResponseWriter, r *http
 	defer cancel()
 	params := sql_queries.AddLoginParams{
 		LoginUuid:         newUUID.String(),
-		UserUuid:          userid.String(),
+		UserID:            userid,
 		DeviceDescription: "",
 		Created:           time.Now().Unix(),
 	}
