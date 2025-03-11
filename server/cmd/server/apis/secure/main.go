@@ -2,6 +2,7 @@ package secure
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -11,8 +12,9 @@ import (
 )
 
 type Server struct {
-	Db   *sql_queries.Queries
-	Next func(token int64, s Server, w http.ResponseWriter, r *http.Request)
+	OrigDB *sql.DB
+	Db     *sql_queries.Queries
+	Next   func(token int64, s Server, w http.ResponseWriter, r *http.Request)
 }
 
 func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {

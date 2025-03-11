@@ -24,3 +24,21 @@ SELECT Logins.device_description, Logins.created, Logins.login_uuid, max(Logs_Lo
 
 -- name: RegisterLogin :exec
 INSERT INTO Logs_Logins(login_uuid, current_time) VALUES(?, ?);
+
+-- name: GetAllQuestions :many
+SELECT questions.question_id, questions.question, questions.answer FROM questions WHERE questions.user_id=? AND questions.enabled = 1;
+
+-- name: GetTagsByQuestion :many
+SELECT tag FROM questions_to_tags WHERE question_id = ?;
+
+-- name: AddNewQuestion :exec
+INSERT INTO questions(question_id, user_id, question, answer, enabled) VALUES (?, ?, ?, ?, ?);
+
+-- name: AddNewTag :exec
+INSERT INTO questions_to_tags(question_id, tag) VALUES(?, ?);
+
+-- name: DeleteAllTags :exec
+DELETE FROM questions_to_tags WHERE questions_to_tags.question_id in (SELECT question_id FROM questions WHERE user_id = ?);
+
+-- name: UpdateQuestion :exec
+UPDATE questions SET question=?, answer=?, enabled=? WHERE question_id=?;

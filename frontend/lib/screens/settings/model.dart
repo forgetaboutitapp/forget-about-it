@@ -8,11 +8,13 @@ part 'model.g.dart';
 
 @freezed
 class RemoteSettings with _$RemoteSettings {
-  const factory RemoteSettings({
-    required IList<RemoteDevice>? remoteDevices,
-  }) = _RemoteSettings;
+  const RemoteSettings({
+    required this.remoteDevices,
+  });
+  @override
+  final IList<RemoteDevice>? remoteDevices;
 
-  factory RemoteSettings.fromJSON(dynamic json) {
+  static RemoteSettings fromJSON(dynamic json) {
     if (json['remote-devices'] == null) {
       return RemoteSettings(remoteDevices: null);
     }
@@ -25,11 +27,17 @@ class RemoteSettings with _$RemoteSettings {
 
 @freezed
 class RemoteDevice with _$RemoteDevice {
-  const factory RemoteDevice({
-    required String title,
-    required DateTime dateAdded,
-    required DateTime? lastUsed,
-  }) = _RemoteDevice;
+  @override
+  final DateTime dateAdded;
+  @override
+  final DateTime? lastUsed;
+  @override
+  final String title;
+  const RemoteDevice({
+    required this.title,
+    required this.dateAdded,
+    required this.lastUsed,
+  });
   factory RemoteDevice.fromJSON(dynamic json) {
     final lastUsed = json['last-used'];
     return RemoteDevice(

@@ -1,11 +1,21 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:flutter/foundation.dart';
-part 'keys.freezed.dart';
+class TwelveWordKeys {
+  const TwelveWordKeys({required this.row, required this.col});
+  final int col;
+  final int row;
 
-@freezed
-class TwelveWordKeys with _$TwelveWordKeys {
-  const factory TwelveWordKeys({required int row, required int col}) =
-      _TwelveWordKeys;
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    if (other.runtimeType != runtimeType) {
+      return false;
+    }
+    return other is TwelveWordKeys && other.col == col && other.row == row;
+  }
+
+  @override
+  int get hashCode => Object.hash(row, col);
 }
 
 const twelveWordLoginButton = 10001;

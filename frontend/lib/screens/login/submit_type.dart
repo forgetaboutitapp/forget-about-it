@@ -1,15 +1,11 @@
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-sealed class SubmitType {}
+part 'submit_type.freezed.dart';
 
-class TwelveWords extends SubmitType {
-  final IList<String> twelveWords;
-
-  TwelveWords({required this.twelveWords});
-}
-
-class Token extends SubmitType {
-  final String token;
-
-  Token({required this.token});
+@freezed
+sealed class SubmitType with _$SubmitType {
+  const SubmitType._();
+  factory SubmitType.twelveWords(IList<String> twelveWords) = TwelveWords;
+  factory SubmitType.token(String token) = Token;
 }

@@ -2,6 +2,7 @@ package login
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -15,7 +16,8 @@ import (
 )
 
 type Server struct {
-	Db *sql_queries.Queries
+	Db     *sql_queries.Queries
+	OrigDB *sql.DB
 }
 
 type postData struct {

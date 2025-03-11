@@ -143,7 +143,7 @@ class TwelveWordsForm extends HookConsumerWidget {
             toRun: (uri) async => await update(
               client,
               uri,
-              TwelveWords(twelveWords: twelveWordHook.value),
+              TwelveWords(twelveWordHook.value),
             ),
           ),
         )

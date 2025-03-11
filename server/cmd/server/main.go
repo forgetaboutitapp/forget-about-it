@@ -23,10 +23,14 @@ func main() {
 	}
 	q := sql_queries.New(db)
 	http.DefaultServeMux.Handle("/api/v0/get-token", login.Server{Db: q})
-	http.DefaultServeMux.Handle("/api/v0/secure/generate-new-token", secure.Server{Db: q, Next: secure.GenerateNewToken})
-	http.DefaultServeMux.Handle("/api/v0/secure/check-new-token", secure.Server{Db: q, Next: secure.CheckNewToken})
-	http.DefaultServeMux.Handle("/api/v0/secure/delete-new-token", secure.Server{Db: q, Next: secure.DeleteNewToken})
-	http.DefaultServeMux.Handle("/api/v0/secure/get-remote-settings", secure.Server{Db: q, Next: secure.GetRemoteSettings})
+	http.DefaultServeMux.Handle("/api/v0/secure/generate-new-token", secure.Server{Db: q, Next: secure.GenerateNewToken, OrigDB: db})
+	http.DefaultServeMux.Handle("/api/v0/secure/check-new-token", secure.Server{Db: q, Next: secure.CheckNewToken, OrigDB: db})
+	http.DefaultServeMux.Handle("/api/v0/secure/delete-new-token", secure.Server{Db: q, Next: secure.DeleteNewToken, OrigDB: db})
+	http.DefaultServeMux.Handle("/api/v0/secure/get-remote-settings", secure.Server{Db: q, Next: secure.GetRemoteSettings, OrigDB: db})
+
+	http.DefaultServeMux.Handle("/api/v0/secure/get-all-questions", secure.Server{Db: q, Next: secure.GetAllQuestions, OrigDB: db})
+	http.DefaultServeMux.Handle("/api/v0/secure/post-all-questions", secure.Server{Db: q, Next: secure.PostAllQuestions, OrigDB: db})
+
 	fmt.Println("Starting server")
 	corsOptions := cors.Options{
 		AllowPrivateNetwork: true,

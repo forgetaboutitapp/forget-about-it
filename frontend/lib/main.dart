@@ -1,4 +1,5 @@
 import 'package:app/data/constants.dart';
+import 'package:app/screens/bulk-edit/view.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/adapters.dart';
@@ -38,6 +39,16 @@ class MainApp extends HookConsumerWidget {
       GoRoute(
         path: HomeScreen.location,
         builder: (context, state) => HomeScreen(),
+      ),
+      GoRoute(
+        path: BulkEditScreen.location,
+        builder: (context, state) => BulkEditScreen(
+          client: http.Client(),
+          token:
+              Hive.box(localSettingsHiveBox).get(localSettingsHiveLoginToken),
+          remoteHost:
+              Hive.box(localSettingsHiveBox).get(localSettingsHiveRemoteHost),
+        ),
       ),
       GoRoute(
         path: LoginScreen.location,

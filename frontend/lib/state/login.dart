@@ -10,13 +10,11 @@ import '../data/constants.dart';
 
 part 'login.freezed.dart';
 
-sealed class LoginReturn {}
-
-class NoLogin extends LoginReturn {}
-
 @freezed
-class LoggedIn extends LoginReturn with _$LoggedIn {
-  const factory LoggedIn({required String id}) = _LoggedIn;
+sealed class LoginReturn with _$LoginReturn {
+  const factory LoginReturn.noLogin() = _LoginReturnNoLogin;
+  const factory LoginReturn.loggedIn({required String token}) =
+      _LoginReturnLoggedIn;
 }
 
 Future<bool> update(

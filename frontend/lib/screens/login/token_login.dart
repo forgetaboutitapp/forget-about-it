@@ -62,7 +62,7 @@ class TokenLogin extends HookConsumerWidget {
                   client,
                   uri,
                   Token(
-                    token: tokenController.text.trim(),
+                    tokenController.text.trim(),
                   ),
                 );
               },
