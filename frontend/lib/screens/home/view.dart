@@ -1,3 +1,4 @@
+import 'package:app/network/interfaces.dart';
 import 'package:app/screens/bulk-edit/view.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -7,7 +8,8 @@ import '../settings/view.dart';
 
 class HomeScreen extends HookConsumerWidget {
   static String location = '/';
-  const HomeScreen({super.key});
+  final FetchData remoteServer;
+  const HomeScreen({super.key, required this.remoteServer});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

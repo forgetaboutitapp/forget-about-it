@@ -1,20 +1,18 @@
 import 'dart:convert';
 
+import 'package:app/network/interfaces.dart';
 import 'package:app/screens/login/view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:http/http.dart' as http;
 import 'package:qr_flutter/qr_flutter.dart';
 
 class QRDialog extends HookWidget {
-  final http.Client client;
-  final String remoteHost;
-  final String token;
-  const QRDialog(
-      {super.key,
-      required this.client,
-      required this.remoteHost,
-      required this.token});
+  final FetchData remoteServer;
+
+  const QRDialog({
+    super.key,
+    required this.remoteServer,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -22,36 +20,20 @@ class QRDialog extends HookWidget {
     final show12Words = useState(LoginMethod.camera);
     useEffect(() {
       bool isCancelled = false;
-      client.get(Uri.parse('$remoteHost/api/v0/secure/generate-new-token'),
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Authorization': 'Bearer $token'
-          }).then((v) {
-        qrCodeData.value = v.body;
-      }).then((e) async {
+      remoteServer.generateNewToken().then((e) async {
         while (!isCancelled) {
-          final v = await client.get(
-              Uri.parse('$remoteHost/api/v0/secure/check-new-token'),
-              headers: {
-                'Cache-Control': 'no-cache',
-                'Authorization': 'Bearer $token'
-              });
-          if (v.body == 'done') {
-            isCancelled = true;
-            if (context.mounted) {
-              Navigator.of(context).pop();
+          remoteServer.checkNewToken().then((cancelled) {
+            if (cancelled) {
+              isCancelled = true;
+              if (context.mounted) {
+                Navigator.of(context).pop();
+              }
             }
-          }
-          await Future.delayed(Duration(seconds: 1));
+          });
         }
       });
       return () {
-        isCancelled = true;
-        client.get(Uri.parse('$remoteHost/api/v0/secure/delete-new-token'),
-            headers: {
-              'Cache-Control': 'no-cache',
-              'Authorization': 'Bearer $token'
-            });
+        remoteServer.deleteNewToken();
       };
     }, []);
     final qrCodeDataValue = qrCodeData.value;
@@ -72,10 +54,12 @@ class QRDialog extends HookWidget {
                   TwelveWordView(twelveWords: decode['mnemonic']),
                 LoginMethod.camera => QrImageViewer(
                     uuid: decode['newUUID'],
-                    remoteHost: remoteHost,
+                    remoteServer: remoteServer,
                   ),
-                LoginMethod.token =>
-                  TokenView(remoteHost: remoteHost, uuid: decode['newUUID']),
+                LoginMethod.token => TokenView(
+                    remoteHost: remoteServer.getRemoteHost(),
+                    uuid: decode['newUUID'],
+                  ),
               },
             ),
             SegmentedButton(
@@ -186,12 +170,12 @@ class TwelveWordView extends StatelessWidget {
 
 class QrImageViewer extends StatelessWidget {
   final String uuid;
-  final String remoteHost;
+  final FetchData remoteServer;
   const QrImageViewer(
-      {super.key, required this.uuid, required this.remoteHost});
+      {super.key, required this.uuid, required this.remoteServer});
   @override
   Widget build(BuildContext context) => QrImageView(
-        data: '$remoteHost;$uuid',
+        data: '${remoteServer.getRemoteHost()};$uuid',
         version: QrVersions.auto,
         size: 400,
         gapless: false,

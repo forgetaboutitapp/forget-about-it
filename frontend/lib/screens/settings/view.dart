@@ -1,27 +1,23 @@
 import 'dart:async';
 
+import 'package:app/network/interfaces.dart';
 import 'package:app/screens/settings/model.dart';
 import 'package:app/screens/settings/qr_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_settings_ui/flutter_settings_ui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
 class SettingsScreen extends HookConsumerWidget {
   static const location = '/settings';
-  final http.Client client;
-  final String token;
-  final String remoteHost;
   final bool curDarkMode;
+  final FetchData remoteServer;
   final FutureOr<void> Function(bool) switchDarkMode;
   const SettingsScreen(
       {super.key,
-      required this.client,
-      required this.token,
-      required this.remoteHost,
       required this.curDarkMode,
+      required this.remoteServer,
       required this.switchDarkMode,
       requird});
 
@@ -136,10 +132,8 @@ class SettingsScreen extends HookConsumerWidget {
                             onPressed: (context) async {
                               await showDialog(
                                 context: context,
-                                builder: (context) => QRDialog(
-                                    token: token,
-                                    client: client,
-                                    remoteHost: remoteHost),
+                                builder: (context) =>
+                                    QRDialog(remoteServer: remoteServer),
                               );
                               if (context.mounted) {
                                 refresh(
@@ -172,7 +166,7 @@ class SettingsScreen extends HookConsumerWidget {
       stillWaitingForRemoteServer.value = true;
       final p = await ref
           .read(remoteSettingsNotifierProvider.notifier)
-          .getData(remoteHost, token, client);
+          .getData(remoteServer);
       stillWaitingForRemoteServer.value = false;
       if (p != null) {
         stillWaitingForRemoteServer.value = false;

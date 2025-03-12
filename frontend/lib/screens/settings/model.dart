@@ -1,8 +1,9 @@
+import 'package:app/network/interfaces.dart';
 import 'package:app/screens/settings/services.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:http/http.dart' as http;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
 part 'model.freezed.dart';
 part 'model.g.dart';
 
@@ -66,13 +67,9 @@ class RemoteSettingsNotifier extends _$RemoteSettingsNotifier {
     }
   }
 
-  Future<Exception?> getData(
-    String remoteHost,
-    String token,
-    http.Client client,
-  ) async {
+  Future<Exception?> getData(FetchData remoteServer) async {
     try {
-      final newState = await getRemoteSettings(remoteHost, token, client);
+      final newState = await getRemoteSettings(remoteServer);
 
       if (!_init || state != newState) {
         state = newState;

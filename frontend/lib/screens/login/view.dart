@@ -4,7 +4,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_zxing/flutter_zxing.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:app/interop/get_url.dart';
-import 'package:http/http.dart';
+import 'package:http/http.dart' as http;
 
 import 'token_login.dart';
 import 'twelve_words_form.dart';
@@ -13,7 +13,7 @@ enum LoginMethod { twelveWords, camera, token }
 
 class LoginScreen extends HookConsumerWidget {
   static String location = '/login';
-  final Client client;
+  final http.Client client;
   const LoginScreen({super.key, required this.client});
   static String? remoteURL = getCurrentLocation();
   @override

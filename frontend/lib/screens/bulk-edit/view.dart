@@ -1,25 +1,21 @@
+import 'package:app/network/interfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:http/http.dart' as http;
 
 import 'parse.dart';
 import 'service.dart';
 
 class BulkEditScreen extends HookWidget {
   static String location = '/bulk-edit';
-  final http.Client client;
-  final String token;
-  final String remoteHost;
+  final FetchData remoteServer;
   const BulkEditScreen({
     super.key,
-    required this.client,
-    required this.token,
-    required this.remoteHost,
+    required this.remoteServer,
   });
 
   @override
   Widget build(BuildContext context) {
-    final future = useState(getAllQuestions(client, token, remoteHost));
+    final future = useState(getAllQuestions(remoteServer: remoteServer));
     return Scaffold(
       appBar: AppBar(title: Text('Edit')),
       body: FutureBuilder(
@@ -46,8 +42,11 @@ class BulkEditScreen extends HookWidget {
             future.value = () async {
               try {
                 final flashcards = parse(text);
-                await postAllQuestions(client, token, remoteHost, flashcards);
-                return (await getAllQuestions(client, token, remoteHost));
+                await postAllQuestions(
+                  remoteServer: remoteServer,
+                  flashcards: flashcards,
+                );
+                return await getAllQuestions(remoteServer: remoteServer);
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(

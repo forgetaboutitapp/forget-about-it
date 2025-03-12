@@ -6,6 +6,7 @@ import 'package:hive_ce_flutter/adapters.dart';
 
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'network/network.dart';
 import 'screens/login/view.dart';
 import 'screens/home/view.dart';
 import 'screens/settings/view.dart';
@@ -38,30 +39,26 @@ class MainApp extends HookConsumerWidget {
     routes: [
       GoRoute(
         path: HomeScreen.location,
-        builder: (context, state) => HomeScreen(),
+        builder: (context, state) => HomeScreen(
+          remoteServer: _getRemoteServer(),
+        ),
       ),
       GoRoute(
         path: BulkEditScreen.location,
         builder: (context, state) => BulkEditScreen(
-          client: http.Client(),
-          token:
-              Hive.box(localSettingsHiveBox).get(localSettingsHiveLoginToken),
-          remoteHost:
-              Hive.box(localSettingsHiveBox).get(localSettingsHiveRemoteHost),
+          remoteServer: _getRemoteServer(),
         ),
       ),
       GoRoute(
         path: LoginScreen.location,
-        builder: (context, state) => LoginScreen(client: http.Client()),
+        builder: (context, state) => LoginScreen(
+          client: http.Client(),
+        ),
       ),
       GoRoute(
         path: SettingsScreen.location,
         builder: (context, state) => SettingsScreen(
-          client: http.Client(),
-          token:
-              Hive.box(localSettingsHiveBox).get(localSettingsHiveLoginToken),
-          remoteHost:
-              Hive.box(localSettingsHiveBox).get(localSettingsHiveRemoteHost),
+          remoteServer: _getRemoteServer(),
           curDarkMode: Hive.box(localSettingsHiveBox)
               .get(localSettingsHiveDarkTheme, defaultValue: false),
           switchDarkMode: (_) async {
@@ -74,6 +71,16 @@ class MainApp extends HookConsumerWidget {
       ),
     ],
   );
+
+  static RemoteServer _getRemoteServer() {
+    return RemoteServer(
+      client: http.Client(),
+      token: Hive.box(localSettingsHiveBox).get(localSettingsHiveLoginToken),
+      remoteHost:
+          Hive.box(localSettingsHiveBox).get(localSettingsHiveRemoteHost),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ValueListenableBuilder(

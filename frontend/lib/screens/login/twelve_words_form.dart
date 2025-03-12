@@ -14,8 +14,11 @@ import 'login_button.dart';
 class TwelveWordsForm extends HookConsumerWidget {
   final String? remoteURL;
   final http.Client client;
-  const TwelveWordsForm(
-      {super.key, required this.remoteURL, required this.client});
+  const TwelveWordsForm({
+    super.key,
+    required this.client,
+    required this.remoteURL,
+  });
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final urlController = useTextEditingController(text: remoteURL ?? '');
