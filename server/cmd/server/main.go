@@ -24,7 +24,7 @@ func main() {
 		panic(err)
 	}
 	q := sql_queries.New(db)
-	realSub, err := fs.Sub(server.Files,"web")
+	realSub, err := fs.Sub(server.Files, "web")
 	if err != nil {
 		panic(err)
 	}
@@ -38,6 +38,7 @@ func main() {
 
 	http.DefaultServeMux.Handle("/api/v0/secure/get-all-questions", secure.Server{Db: q, Next: secure.GetAllQuestions, OrigDB: db})
 	http.DefaultServeMux.Handle("/api/v0/secure/post-all-questions", secure.Server{Db: q, Next: secure.PostAllQuestions, OrigDB: db})
+	http.DefaultServeMux.Handle("/api/v0/secure/get-all-tags", secure.Server{Db: q, Next: secure.GetAllTags, OrigDB: db})
 
 	fmt.Println("Starting server")
 	corsOptions := cors.Options{

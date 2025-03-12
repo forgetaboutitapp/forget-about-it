@@ -42,3 +42,7 @@ DELETE FROM questions_to_tags WHERE questions_to_tags.question_id in (SELECT que
 
 -- name: UpdateQuestion :exec
 UPDATE questions SET question=?, answer=?, enabled=? WHERE question_id=?;
+
+-- name: GetTagsByUser :many
+
+with tmpValue (id) as (SELECT question_id FROM QUESTIONS WHERE questions.user_id=?) select distinct tag from questions_to_tags, tmpValue where questions_to_tags.question_id=tmpValue.id;

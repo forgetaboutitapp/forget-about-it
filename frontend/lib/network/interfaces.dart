@@ -9,4 +9,5 @@ abstract class FetchData {
   Future<void> deleteNewToken();
   Future<String> getRemoteSettings();
   String getRemoteHost();
+  Future<String> getAllTags();
 }
