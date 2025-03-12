@@ -11,6 +11,9 @@ import (
 //go:embed sql/migrations/*
 var DDL embed.FS
 
+//go:embed web/*
+var Files embed.FS
+
 var DBFilename = filepath.Join(xdg.StateHome, "forget-about-it.sqlite3")
 
 var MutexUsersWaiting sync.Mutex

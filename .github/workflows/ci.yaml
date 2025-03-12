@@ -1,0 +1,148 @@
+# Generated basic setup using chatgpt
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - '**'  # This will trigger on pushes to any branch
+    tags:
+      - 'v*'  # This will trigger on version tags
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.24'  # Change to your desired Go version
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.29.0
+      - name: Run Go tests
+        run: |
+          cd frontend
+          dart run build_runner build -d
+          flutter build web --release
+          mkdir ../server/web -p
+          cp ./build/web ../server/web -rf
+          cd ../
+          go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+          cd server
+
+          sqlc generate
+          go test ./...
+
+      - name: Clone repository
+        uses: actions/checkout@v4
+      - name: Run Flutter tests
+        run: |
+          cd frontend
+          flutter pub get
+          flutter config --no-analytics
+          dart pub run build_runner build -d
+          flutter test
+
+
+  build:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.29.0
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.24'  # Change to your desired Go version
+      - name: Build provisioning app
+        run: |
+          cd frontend
+          dart run build_runner build -d
+          flutter build web --release
+          mkdir ../server/web -p
+          cp ./build/web ../server -rf
+          cd ../
+          go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+          cd server
+
+          sqlc generate
+          for os in linux windows freebsd openbsd darwin; do
+            for arch in arm64 amd64; do
+              mkdir -p  ${{ github.workspace }}/tmp-release/${os}-${arch}
+              ext=""
+              if [ "$os" == "windows" ]; then
+                ext=".exe"
+              fi
+              GOOS=$os GOARCH=$arch go build -o ${{ github.workspace }}/tmp-release/$os-$arch/provision${ext} ./cmd/provision
+            done
+          done
+      - name: Build server app
+        run: |
+          cd server
+
+          for os in linux windows freebsd openbsd darwin; do
+            for arch in arm64 amd64; do
+              ext=""
+              if [ "$os" == "windows" ]; then
+                ext=".exe"
+              fi
+              GOOS=$os GOARCH=$arch go build -o ${{ github.workspace }}/tmp-release/$os-$arch/server${ext} ./cmd/server
+            done
+          done
+          mkdir -p ${{ github.workspace }}/releases/
+          cd ${{ github.workspace }}/tmp-release/
+          for os in linux windows freebsd openbsd darwin; do
+            for arch in arm64 amd64; do
+              if [ "$os" == "windows" ]; then
+                  zip -r ${{ github.workspace }}/releases/forget-about-it-${os}-${arch}.zip $os-$arch
+              else
+                tar -czvf ${{ github.workspace }}/releases/forget-about-it-${os}-${arch}.tar.gz $os-$arch
+              fi
+            done
+          done
+      - name: Upload release artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          fail_on_unmatched_files: true
+          token: ${{ secrets.RELEASE_TOKEN }}
+          files: |
+            ${{ github.workspace }}/releases/*
+  flutter-build:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.29.0
+      - name: Build Flutter application for Android
+        run: |
+          cd frontend
+          dart run build_runner build -d
+          flutter build apk --release
+          mkdir ${{ github.workspace }}/releases
+          ls build
+          ls build/app
+          ls build/app/outputs
+          ls build/app/outputs/flutter-apk/
+          mv build/app/outputs/flutter-apk/app-release.apk ${{ github.workspace }}/releases/forget-about-it.apk
+      - name: Upload release artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          fail_on_unmatched_files: true
+          token: ${{ secrets.RELEASE_TOKEN }}
+          files: |
+            ${{ github.workspace }}/releases/*

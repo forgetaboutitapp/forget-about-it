@@ -54,3 +54,5 @@ server/pkg/sql_queries
 **/*.freezed.dart
 
 **/*.g.dart
+
+server/web
