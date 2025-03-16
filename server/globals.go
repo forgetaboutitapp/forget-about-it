@@ -18,3 +18,4 @@ var DBFilename = filepath.Join(xdg.StateHome, "forget-about-it.sqlite3")
 
 var MutexUsersWaiting sync.Mutex
 var UsersWaiting map[int64]struct{} = make(map[int64]struct{})
+var DbLock sync.RWMutex

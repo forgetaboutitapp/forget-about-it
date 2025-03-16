@@ -20,10 +20,12 @@ func main() {
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(5*time.Second))
 	defer cancel()
 	db, err := dbUtils.OpenDatabase(ctx)
+	db.SetMaxOpenConns(1)
 	if err != nil {
 		panic(err)
 	}
 	q := sql_queries.New(db)
+
 	realSub, err := fs.Sub(server.Files, "web")
 	if err != nil {
 		panic(err)
@@ -39,6 +41,8 @@ func main() {
 	http.DefaultServeMux.Handle("/api/v0/secure/get-all-questions", secure.Server{Db: q, Next: secure.GetAllQuestions, OrigDB: db})
 	http.DefaultServeMux.Handle("/api/v0/secure/post-all-questions", secure.Server{Db: q, Next: secure.PostAllQuestions, OrigDB: db})
 	http.DefaultServeMux.Handle("/api/v0/secure/get-all-tags", secure.Server{Db: q, Next: secure.GetAllTags, OrigDB: db})
+	http.DefaultServeMux.Handle("/api/v0/secure/grade-question", secure.Server{Db: q, Next: secure.GradeQuestion, OrigDB: db})
+	http.DefaultServeMux.Handle("/api/v0/secure/get-next-question", secure.Server{Db: q, Next: secure.GetNextQuestion, OrigDB: db})
 
 	fmt.Println("Starting server")
 	corsOptions := cors.Options{

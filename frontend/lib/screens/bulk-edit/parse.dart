@@ -37,11 +37,10 @@ IList<Flashcard> parse(String data) {
           id: line[0], question: line[1], lineNumber: index);
     }
     return Flashcard(
-      id: id,
-      question: line[1],
-      answer: line[2],
-      tags: line[3].split(' ').toIList(),
-    );
+        id: id,
+        question: line[1],
+        answer: line[2],
+        tags: line[3].split(' ').where((e) => e.trim() != '').toIList());
   }).where((f) => f != null).map((e) => e as Flashcard).toIList();
   // ensure that ids don't conflic and ensure all questions have tags
   HashSet cardIDs = HashSet();

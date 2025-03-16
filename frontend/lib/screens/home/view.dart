@@ -1,6 +1,7 @@
 import 'package:app/network/interfaces.dart';
 import 'package:app/screens/bulk-edit/view.dart';
 import 'package:app/screens/home/model.dart';
+import 'package:app/screens/quiz/view.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -57,7 +58,17 @@ class HomeScreen extends HookConsumerWidget {
 
   buildDisplay(BuildContext context, AsyncSnapshot<IList<Tag>> snapshot) {
     if (snapshot.hasError) {
-      return Center(child: Text('Error ${snapshot.error}'));
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.red,
+            content: Text(
+              'Error ${snapshot.error}',
+            ),
+          ),
+        ),
+      );
+      return Center(child: Text(''));
     } else if (snapshot.hasData) {
       return TagsView(
         tagList: snapshot.data!,
@@ -81,7 +92,7 @@ class TagsView extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final tagListResponsive = useState(tagList);
-    final selectedTags = useState(ISet());
+    final selectedTags = useState(ISet<int>());
     return Column(
       children: [
         Expanded(
@@ -122,11 +133,27 @@ class TagsView extends HookWidget {
           ),
         ),
         Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: TextButton(
-                onPressed: selectedTags.value.isEmpty ? null : () {},
+                onPressed: selectedTags.value.isEmpty
+                    ? null
+                    : () {
+                        context.go(
+                          Uri(
+                            path: QuizView.location,
+                            queryParameters: {
+                              'tags': selectedTags.value
+                                  .map(
+                                    (e) => tagList[e].tag,
+                                  )
+                                  .toList()
+                            },
+                          ).toString(),
+                        );
+                      },
                 child: Text('Quiz Me!'),
               ),
             )

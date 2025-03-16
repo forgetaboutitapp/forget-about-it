@@ -18,7 +18,7 @@ class LoginButton extends StatelessWidget {
               Uri remoteURL;
               try {
                 remoteURL = Uri.parse(remoteURLString);
-              } catch (e) {
+              } on Exception catch (_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     backgroundColor: Colors.red,
@@ -37,12 +37,12 @@ class LoginButton extends StatelessWidget {
                     ),
                   );
                 }
-              } catch (e) {
+              } on Exception catch (e) {
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     backgroundColor: Colors.red,
-                    content: Text('Error Connecting: $e'),
+                    content: Text('Error: $e'),
                   ),
                 );
               }

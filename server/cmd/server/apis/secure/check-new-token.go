@@ -1,10 +1,10 @@
 package secure
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/forgetaboutitapp/forget-about-it/server"
-	"golang.org/x/exp/slog"
 )
 
 func CheckNewToken(userid int64, s Server, w http.ResponseWriter, r *http.Request) {

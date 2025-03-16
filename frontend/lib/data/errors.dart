@@ -4,6 +4,7 @@ class ServerException implements Exception {
   ServerException({required this.code});
   @override
   String toString() => switch (code) {
+        -1 => 'The server is not responding',
         401 => 'The token is invalid',
         400 ||
         500 ||

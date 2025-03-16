@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"math"
 	"math/big"
 	"net/http"
 
+	"github.com/forgetaboutitapp/forget-about-it/server"
 	"github.com/forgetaboutitapp/forget-about-it/server/pkg/sql_queries"
 	"github.com/hashicorp/go-set"
 )
@@ -43,81 +43,89 @@ func PostAllQuestions(userid int64, s Server, w http.ResponseWriter, r *http.Req
 	}
 
 	slog.Info("got questions list", "data", data)
-	tx, err := s.OrigDB.BeginTx(r.Context(), &sql.TxOptions{})
-	if err != nil {
-		slog.Error("can't initialize transaction", "err", err)
-		return
-	}
-	defer tx.Rollback()
-	qtx := s.Db.WithTx(tx)
-
-	// get old questions
-	oldQuestions, err := qtx.GetAllQuestions(r.Context(), userid)
-	if err != nil {
-		slog.Error("can't get old questions", "err", err)
-		return
-	}
-	fillData(data)
-	oldQuestionsAsFlashcard := []Flashcard{}
-	for _, v := range oldQuestions {
-		oldQuestionsAsFlashcard = append(oldQuestionsAsFlashcard, Flashcard{Id: v.QuestionID, Question: v.Question, Answer: v.Answer})
-	}
-	slog.Info("old questions", "oldQuestionsAsFlashcard", oldQuestionsAsFlashcard)
-	cardsToDelete, cardsToAdd, cardsToUpdate := UpdateCards(data, oldQuestionsAsFlashcard)
-	slog.Info("Updating questions", "cardsToDelete", cardsToDelete, "cardsToAdd", cardsToAdd, "cardsToUpdate", cardsToUpdate)
-
-	// to delete
-
-	for _, card := range cardsToDelete {
-		err = qtx.UpdateQuestion(r.Context(), sql_queries.UpdateQuestionParams{Question: card.Question, Answer: card.Answer, QuestionID: card.Id, Enabled: 0})
+	err = func() error {
+		server.DbLock.Lock()
+		defer server.DbLock.Unlock()
+		tx, err := s.OrigDB.BeginTx(r.Context(), &sql.TxOptions{})
 		if err != nil {
-			slog.Error("can't remove question", "id", card.Id, "err", err)
-			return
+			slog.Error("can't initialize transaction", "err", err)
+			return err
 		}
-	}
-	slog.Info("finished deleting")
-	// to update
+		defer tx.Rollback()
+		qtx := s.Db.WithTx(tx)
 
-	for _, card := range cardsToUpdate {
-		err = qtx.UpdateQuestion(r.Context(), sql_queries.UpdateQuestionParams{Question: card.Question, Answer: card.Answer, QuestionID: card.Id, Enabled: 1})
+		// get old questions
+		oldQuestions, err := qtx.GetAllQuestions(r.Context(), userid)
 		if err != nil {
-			slog.Error("can't update question", "id", card.Id, "err", err)
-			return
+			slog.Error("can't get old questions", "err", err)
+			return err
 		}
-	}
-	slog.Info("finished updating")
-	// to add
-
-	for _, card := range cardsToAdd {
-		err = qtx.AddNewQuestion(r.Context(), sql_queries.AddNewQuestionParams{UserID: userid, Question: card.Question, Answer: card.Answer, QuestionID: card.Id, Enabled: 1})
-		if err != nil {
-			slog.Error("can't add question", "id", card.Id, "err", err)
-			return
+		fillData(data)
+		oldQuestionsAsFlashcard := []Flashcard{}
+		for _, v := range oldQuestions {
+			oldQuestionsAsFlashcard = append(oldQuestionsAsFlashcard, Flashcard{Id: v.QuestionID, Question: v.Question, Answer: v.Answer})
 		}
-	}
-	slog.Info("finished adding")
+		slog.Info("old questions", "oldQuestionsAsFlashcard", oldQuestionsAsFlashcard)
+		cardsToDelete, cardsToAdd, cardsToUpdate := UpdateCards(data, oldQuestionsAsFlashcard)
+		slog.Info("Updating questions", "cardsToDelete", cardsToDelete, "cardsToAdd", cardsToAdd, "cardsToUpdate", cardsToUpdate)
 
-	err = qtx.DeleteAllTags(r.Context(), userid)
-	if err != nil {
-		slog.Error("can't delete tags", "err", err)
-		return
-	}
-	slog.Info("deleted all taggs")
-	for _, val := range data {
-		for _, tag := range val.Tags {
-			err = qtx.AddNewTag(r.Context(), sql_queries.AddNewTagParams{
-				QuestionID: int64(val.Id),
-				Tag:        tag,
-			})
+		// to delete
+
+		for _, card := range cardsToDelete {
+			err = qtx.UpdateQuestion(r.Context(), sql_queries.UpdateQuestionParams{Question: card.Question, Answer: card.Answer, QuestionID: card.Id, Enabled: 0})
 			if err != nil {
-				slog.Error("can't add new tag", "err", err)
-				return
+				slog.Error("can't remove question", "id", card.Id, "err", err)
+				return err
 			}
 		}
-	}
-	err = tx.Commit()
+		slog.Info("finished deleting")
+		// to update
+
+		for _, card := range cardsToUpdate {
+			err = qtx.UpdateQuestion(r.Context(), sql_queries.UpdateQuestionParams{Question: card.Question, Answer: card.Answer, QuestionID: card.Id, Enabled: 1})
+			if err != nil {
+				slog.Error("can't update question", "id", card.Id, "err", err)
+				return err
+			}
+		}
+		slog.Info("finished updating")
+		// to add
+
+		for _, card := range cardsToAdd {
+			err = qtx.AddNewQuestion(r.Context(), sql_queries.AddNewQuestionParams{UserID: userid, Question: card.Question, Answer: card.Answer, QuestionID: card.Id, Enabled: 1})
+			if err != nil {
+				slog.Error("can't add question", "id", card.Id, "err", err)
+				return err
+			}
+		}
+		slog.Info("finished adding")
+
+		err = qtx.DeleteAllTags(r.Context(), userid)
+		if err != nil {
+			slog.Error("can't delete tags", "err", err)
+			return err
+		}
+		slog.Info("deleted all taggs")
+		for _, val := range data {
+			for _, tag := range val.Tags {
+				err = qtx.AddNewTag(r.Context(), sql_queries.AddNewTagParams{
+					QuestionID: int64(val.Id),
+					Tag:        tag,
+				})
+				if err != nil {
+					slog.Error("can't add new tag", "err", err)
+					return err
+				}
+			}
+		}
+		err = tx.Commit()
+		if err != nil {
+			slog.Error("unable to commit", "err", err)
+			return err
+		}
+		return nil
+	}()
 	if err != nil {
-		slog.Error("unable to commit", "err", err)
 		return
 	}
 }
@@ -126,7 +134,7 @@ func fillData(data []Flashcard) {
 	for i := range data {
 		var questionId int64 = 0
 		if data[i].Id == 0 {
-			bigUserid, err := rand.Int(rand.Reader, big.NewInt(int64(math.MaxInt64)))
+			bigUserid, err := rand.Int(rand.Reader, big.NewInt(IntPow(2, 52)))
 			if err != nil {
 				slog.Error("can't read random values", "err", err)
 				return
@@ -137,6 +145,23 @@ func fillData(data []Flashcard) {
 		}
 		data[i].Id = questionId
 	}
+}
+
+// https://stackoverflow.com/questions/64108933/how-to-use-math-pow-with-integers-in-go
+func IntPow(n, m int64) int64 {
+	if m == 0 {
+		return 1
+	}
+
+	if m == 1 {
+		return n
+	}
+
+	result := n
+	for i := int64(2); i <= m; i++ {
+		result *= n
+	}
+	return result
 }
 
 // Returns cardsToDelete, cardsToAdd, cardsToUpdate

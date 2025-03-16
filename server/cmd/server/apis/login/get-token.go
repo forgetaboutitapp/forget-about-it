@@ -65,7 +65,12 @@ func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(5*time.Second))
 	defer cancel()
-	users, err := s.Db.FindUserByLogin(ctx, token.String())
+	users, err := func() ([]int64, error) {
+		server.DbLock.RLock()
+		defer server.DbLock.RUnlock()
+		users, err := s.Db.FindUserByLogin(ctx, token.String())
+		return users, err
+	}()
 	if err != nil {
 		slog.Error("Could not find user", "token-uuid", token.String(), "err", err)
 		w.WriteHeader(http.StatusUnauthorized)
@@ -87,10 +92,14 @@ func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		LoginUuid:   token.String(),
 		CurrentTime: time.Now().Unix(),
 	})
-	err = s.Db.RegisterLogin(timeout, sql_queries.RegisterLoginParams{
-		LoginUuid:   token.String(),
-		CurrentTime: time.Now().Unix(),
-	})
+	err = func() error {
+		server.DbLock.Lock()
+		defer server.DbLock.Unlock()
+		return s.Db.RegisterLogin(timeout, sql_queries.RegisterLoginParams{
+			LoginUuid:   token.String(),
+			CurrentTime: time.Now().Unix(),
+		})
+	}()
 	if err != nil {
 		slog.Error("Unable to register login", "token", token, "err", err)
 		w.WriteHeader(http.StatusInternalServerError)

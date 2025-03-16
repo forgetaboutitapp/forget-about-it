@@ -18,96 +18,128 @@ class RemoteServer implements FetchData {
 
   @override
   Future<String> getAllQuestions() async {
-    final res = await client.get(
-        Uri.parse('$remoteHost/api/v0/secure/get-all-questions'),
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Authorization': 'Bearer $token'
-        });
-    if (res.statusCode != 200) {
-      throw ServerException(code: res.statusCode);
+    try {
+      final res = await client.get(
+          Uri.parse('$remoteHost/api/v0/secure/get-all-questions'),
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Authorization': 'Bearer $token'
+          });
+      if (res.statusCode != 200) {
+        throw ServerException(code: res.statusCode);
+      }
+      return res.body;
+    } on http.ClientException catch (_) {
+      throw ServerException(code: -1);
     }
-    return res.body;
   }
 
   @override
   Future<void> postAllQuestions(IList<Flashcard> flashcards) async {
-    final res = await client.post(
-      Uri.parse('$remoteHost/api/v0/secure/post-all-questions'),
-      headers: {'Cache-Control': 'no-cache', 'Authorization': 'Bearer $token'},
-      body: jsonEncode(flashcards.map((e) => e.toJson()).toList()),
-    );
-    if (res.statusCode != 200) {
-      throw ServerException(code: res.statusCode);
+    try {
+      final res = await client.post(
+        Uri.parse('$remoteHost/api/v0/secure/post-all-questions'),
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Authorization': 'Bearer $token'
+        },
+        body: jsonEncode(flashcards.map((e) => e.toJson()).toList()),
+      );
+      if (res.statusCode != 200) {
+        throw ServerException(code: res.statusCode);
+      }
+    } on http.ClientException catch (_) {
+      throw ServerException(code: -1);
     }
   }
 
   @override
   Future<String> generateNewToken() async {
-    final v = await client.get(
-        Uri.parse('$remoteHost/api/v0/secure/generate-new-token'),
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Authorization': 'Bearer $token'
-        });
-    return v.body;
+    try {
+      final v = await client.get(
+          Uri.parse('$remoteHost/api/v0/secure/generate-new-token'),
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Authorization': 'Bearer $token'
+          });
+      return v.body;
+    } on http.ClientException catch (_) {
+      throw ServerException(code: -1);
+    }
   }
 
   @override
   Future<bool> checkNewToken() async {
-    final v = await client
-        .get(Uri.parse('$remoteHost/api/v0/secure/check-new-token'), headers: {
-      'Cache-Control': 'no-cache',
-      'Authorization': 'Bearer $token'
-    });
-    if (v.body == 'done') {
-      return true;
+    try {
+      final v = await client.get(
+          Uri.parse('$remoteHost/api/v0/secure/check-new-token'),
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Authorization': 'Bearer $token'
+          });
+      if (v.body == 'done') {
+        return true;
+      }
+      await Future.delayed(Duration(seconds: 1));
+      return false;
+    } on http.ClientException catch (_) {
+      throw ServerException(code: -1);
     }
-    await Future.delayed(Duration(seconds: 1));
-    return false;
   }
 
   @override
   Future<void> deleteNewToken() async {
-    await client.get(Uri.parse('$remoteHost/api/v0/secure/delete-new-token'),
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Authorization': 'Bearer $token'
-        });
+    try {
+      await client.get(Uri.parse('$remoteHost/api/v0/secure/delete-new-token'),
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Authorization': 'Bearer $token'
+          });
+    } on http.ClientException catch (_) {
+      throw ServerException(code: -1);
+    }
   }
 
   @override
   Future<String> getRemoteSettings() async {
-    final remoteSettings = await client.get(
-        Uri.parse('$remoteHost/api/v0/secure/get-remote-settings'),
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Authorization': 'Bearer $token'
-        });
-    if (remoteSettings.statusCode != 200) {
-      throw ServerException(code: remoteSettings.statusCode);
+    try {
+      final remoteSettings = await client.get(
+          Uri.parse('$remoteHost/api/v0/secure/get-remote-settings'),
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Authorization': 'Bearer $token'
+          });
+      if (remoteSettings.statusCode != 200) {
+        throw ServerException(code: remoteSettings.statusCode);
+      }
+      return remoteSettings.body;
+    } on http.ClientException catch (_) {
+      throw ServerException(code: -1);
     }
-    return remoteSettings.body;
   }
 
   static Future<String> update(
       http.Client client, Uri remoteHost, Map<String, dynamic> d) async {
-    final v = await client.post(
-      Uri(
-        scheme: remoteHost.scheme,
-        port: remoteHost.port,
-        host: remoteHost.host,
-        path: '/api/v0/get-token',
-      ),
-      headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
-      body: jsonEncode(d),
-    );
-    if (v.statusCode != 200) {
-      throw ServerException(code: v.statusCode);
+    try {
+      final v = await client.post(
+        Uri(
+          scheme: remoteHost.scheme,
+          port: remoteHost.port,
+          host: remoteHost.host,
+          path: '/api/v0/get-token',
+        ),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(d),
+      );
+      if (v.statusCode != 200) {
+        throw ServerException(code: v.statusCode);
+      }
+      return v.body;
+    } on http.ClientException catch (_) {
+      throw ServerException(code: -1);
     }
-    return v.body;
   }
 
   @override
@@ -115,14 +147,58 @@ class RemoteServer implements FetchData {
 
   @override
   Future<String> getAllTags() async {
-    final remoteSettings = await client
-        .get(Uri.parse('$remoteHost/api/v0/secure/get-all-tags'), headers: {
-      'Cache-Control': 'no-cache',
-      'Authorization': 'Bearer $token'
-    });
-    if (remoteSettings.statusCode != 200) {
-      throw ServerException(code: remoteSettings.statusCode);
+    try {
+      final remoteSettings = await client
+          .get(Uri.parse('$remoteHost/api/v0/secure/get-all-tags'), headers: {
+        'Cache-Control': 'no-cache',
+        'Authorization': 'Bearer $token'
+      });
+      if (remoteSettings.statusCode != 200) {
+        throw ServerException(code: remoteSettings.statusCode);
+      }
+      return remoteSettings.body;
+    } on http.ClientException catch (_) {
+      throw ServerException(code: -1);
     }
-    return remoteSettings.body;
+  }
+
+  @override
+  Future<String> getNextQuestion(ISet<String> tags) async {
+    try {
+      // TODO: Make this a get and pass tags as a query string
+      final nextQuestion = await client.post(
+        Uri.parse('$remoteHost/api/v0/secure/get-next-question'),
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(tags.toList()),
+      );
+      if (nextQuestion.statusCode != 200) {
+        throw ServerException(code: nextQuestion.statusCode);
+      }
+      return nextQuestion.body;
+    } on http.ClientException catch (_) {
+      throw ServerException(code: -1);
+    }
+  }
+
+  @override
+  Future<void> gradeQuestion(int questionID, bool correct) async {
+    try {
+      final nextQuestion = await client.post(
+        Uri.parse('$remoteHost/api/v0/secure/grade-question'),
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'question-id': questionID, 'correct': correct}),
+      );
+      if (nextQuestion.statusCode != 200) {
+        throw ServerException(code: nextQuestion.statusCode);
+      }
+    } on http.ClientException catch (_) {
+      throw ServerException(code: -1);
+    }
   }
 }

@@ -10,4 +10,6 @@ abstract class FetchData {
   Future<String> getRemoteSettings();
   String getRemoteHost();
   Future<String> getAllTags();
+  Future<String> getNextQuestion(ISet<String> tags);
+  Future<void> gradeQuestion(int questionID, bool correct);
 }

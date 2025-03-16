@@ -6,6 +6,9 @@ import (
 	"log/slog"
 	"net/http"
 	"slices"
+
+	"github.com/forgetaboutitapp/forget-about-it/server"
+	"github.com/forgetaboutitapp/forget-about-it/server/pkg/sql_queries"
 )
 
 type TagSet struct {
@@ -14,7 +17,12 @@ type TagSet struct {
 }
 
 func GetAllTags(userid int64, s Server, w http.ResponseWriter, r *http.Request) {
-	questions, err := s.Db.GetAllQuestions(r.Context(), userid)
+	questions, err := func() ([]sql_queries.GetAllQuestionsRow, error) {
+		server.DbLock.RLock()
+		defer server.DbLock.RUnlock()
+		res, err := s.Db.GetAllQuestions(r.Context(), userid)
+		return res, err
+	}()
 	if err != nil {
 		slog.Error("can't get questions by userid", "uuid", userid, "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -22,7 +30,13 @@ func GetAllTags(userid int64, s Server, w http.ResponseWriter, r *http.Request) 
 	}
 	tagsMap := make(map[string][]int64)
 	for _, question := range questions {
-		tags, err := s.Db.GetTagsByQuestion(r.Context(), question.QuestionID)
+
+		tags, err := func() ([]string, error) {
+			server.DbLock.RLock()
+			defer server.DbLock.RUnlock()
+			tags, err := s.Db.GetTagsByQuestion(r.Context(), question.QuestionID)
+			return tags, err
+		}()
 		if err != nil {
 			slog.Error("can't get questions by userid", "uuid", userid, "err", err)
 			w.WriteHeader(http.StatusInternalServerError)

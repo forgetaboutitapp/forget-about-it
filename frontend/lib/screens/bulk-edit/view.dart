@@ -1,3 +1,4 @@
+import 'package:app/data/errors.dart';
 import 'package:app/network/interfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -15,7 +16,31 @@ class BulkEditScreen extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final future = useState(getAllQuestions(remoteServer: remoteServer));
+    final future = useState(() async {
+      try {
+        final q = await getAllQuestions(remoteServer: remoteServer);
+        return q;
+      } on ServerException catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: Colors.red,
+              content: Text('$e'),
+            ),
+          );
+        }
+      } on Exception catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: Colors.red,
+              content: Text('Error: $e'),
+            ),
+          );
+        }
+      }
+      return null;
+    }());
     return Scaffold(
       appBar: AppBar(title: Text('Edit')),
       body: FutureBuilder(
@@ -32,9 +57,19 @@ class BulkEditScreen extends HookWidget {
   }
 
   Widget displayWidget(
-      BuildContext context, snapshot, ValueNotifier<Future<String>> future) {
+      BuildContext context, snapshot, ValueNotifier<Future<String?>> future) {
     if (snapshot.hasError) {
-      return Center(child: Text('Error ${snapshot.error}'));
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.red,
+            content: Text(
+              'Error ${snapshot.error}',
+            ),
+          ),
+        ),
+      );
+      return Center(child: Text(''));
     } else if (snapshot.hasData) {
       return MainBulkEditView(
           text: snapshot.data ?? '',
@@ -47,7 +82,16 @@ class BulkEditScreen extends HookWidget {
                   flashcards: flashcards,
                 );
                 return await getAllQuestions(remoteServer: remoteServer);
-              } catch (e) {
+              } on ServerException catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      backgroundColor: Colors.red,
+                      content: Text('$e'),
+                    ),
+                  );
+                }
+              } on Exception catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(

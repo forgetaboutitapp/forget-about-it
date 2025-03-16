@@ -40,7 +40,12 @@ func GenerateNewToken(userid int64, s Server, w http.ResponseWriter, r *http.Req
 		DeviceDescription: "",
 		Created:           time.Now().Unix(),
 	}
-	err = s.Db.AddLogin(timeoutContext, params)
+
+	err = func() error {
+		server.DbLock.Lock()
+		defer server.DbLock.Unlock()
+		return s.Db.AddLogin(timeoutContext, params)
+	}()
 	if err != nil {
 		slog.Error("cannot create new login", "params", params, "err", err)
 		jsonVal, err := json.Marshal(map[string]string{"type": "error", "message": "Internal Server Error"})

@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/forgetaboutitapp/forget-about-it/server/pkg/sql_queries"
 )
 
 type RemoteDevice struct {
@@ -25,7 +27,9 @@ func GetRemoteSettings(userid int64, s Server, w http.ResponseWriter, r *http.Re
 	timeoutContext, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 	slog.Info("userid", "userid", userid)
-	rows, err := s.Db.FindLoginIDByUser(timeoutContext, userid)
+	rows, err := func() ([]sql_queries.FindLoginIDByUserRow, error) {
+		return s.Db.FindLoginIDByUser(timeoutContext, userid)
+	}()
 	if err != nil {
 		slog.Error("can't find login by userid", "uuid", userid, "err", err)
 		w.WriteHeader(http.StatusInternalServerError)

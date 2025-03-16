@@ -1,6 +1,8 @@
 import 'package:app/data/constants.dart';
 import 'package:app/screens/bulk-edit/view.dart';
+import 'package:app/screens/quiz/view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/adapters.dart';
 
@@ -15,6 +17,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
   await Hive.openBox<dynamic>(localSettingsHiveBox);
+  usePathUrlStrategy();
+
   runApp(
     ProviderScope(
       child: MainApp(),
@@ -31,7 +35,7 @@ class MainApp extends HookConsumerWidget {
       if (settingsBox.get(localSettingsHiveLoginToken) == null) {
         return LoginScreen.location;
       } else if (state.fullPath != LoginScreen.location) {
-        return state.fullPath;
+        return state.uri.toString();
       } else {
         return HomeScreen.location;
       }
@@ -53,6 +57,13 @@ class MainApp extends HookConsumerWidget {
         path: LoginScreen.location,
         builder: (context, state) => LoginScreen(
           client: http.Client(),
+        ),
+      ),
+      GoRoute(
+        path: QuizView.location,
+        builder: (context, state) => QuizView(
+          remoteServer: _getRemoteServer(),
+          tags: state.uri.queryParametersAll,
         ),
       ),
       GoRoute(

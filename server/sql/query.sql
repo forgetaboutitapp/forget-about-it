@@ -44,5 +44,19 @@ DELETE FROM questions_to_tags WHERE questions_to_tags.question_id in (SELECT que
 UPDATE questions SET question=?, answer=?, enabled=? WHERE question_id=?;
 
 -- name: GetTagsByUser :many
-
 with tmpValue (id) as (SELECT question_id FROM QUESTIONS WHERE questions.user_id=?) select distinct tag from questions_to_tags, tmpValue where questions_to_tags.question_id=tmpValue.id;
+
+-- name: GradeQuestion :exec
+INSERT INTO questions_logs (question_id, result, timestamp) VALUES (?, ?, ?);
+
+-- name: GetAllGrades :many
+SELECT questions_logs.question_id, result, timestamp FROM questions_logs JOIN questions ON questions.question_id = questions_logs.question_id WHERE questions.user_id=?;
+
+-- name: AddSpacingAlgorithm :exec
+INSERT INTO spacing_algorithms(algorithm_id, timestamp_added, initialization_functions, allocating_function, freeing_function, algorithm, author_name, author, remote_url, license, module_name, download_url, version) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?);
+
+-- name: GetSpacingAlgorithms :many
+SELECT algorithm_id, timestamp_added, initialization_functions, allocating_function, freeing_function, algorithm, author_name, author, remote_url, license, module_name FROM spacing_algorithms;
+
+-- name: GetDefaultAlgorithm :one
+SELECT default_algorithm from Users WHERE user_id = ?;
