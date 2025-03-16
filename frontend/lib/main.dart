@@ -1,8 +1,8 @@
 import 'package:app/data/constants.dart';
+import 'package:app/interop/get_url.dart';
 import 'package:app/screens/bulk-edit/view.dart';
 import 'package:app/screens/quiz/view.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/adapters.dart';
 
@@ -17,7 +17,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
   await Hive.openBox<dynamic>(localSettingsHiveBox);
-  usePathUrlStrategy();
+  usePathUrlStrategySafe();
 
   runApp(
     ProviderScope(
