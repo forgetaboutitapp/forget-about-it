@@ -47,7 +47,8 @@ IList<Flashcard> parse(String data) {
   HashSet cardQuestions = HashSet();
 
   for (final flashcard in flashcardList) {
-    if (flashcard.tags.length == 1 && flashcard.tags[0] == '') {
+    if (flashcard.tags.isEmpty ||
+        (flashcard.tags.length == 1 && flashcard.tags[0] == '')) {
       throw NoTagException(id: flashcard.id, question: flashcard.question);
     }
     final id = flashcard.id;
