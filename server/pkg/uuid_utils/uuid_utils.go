@@ -1,7 +1,8 @@
 package uuidUtils
 
 import (
-	"fmt"
+	"errors"
+	"log/slog"
 	"strings"
 
 	"github.com/google/uuid"
@@ -14,11 +15,14 @@ func NewMnemonicFromUuid(uuid uuid.UUID) (string, error) {
 	return mnemonic, err
 }
 
+var ErrUUIDFromMnemonic = errors.New("unable to get id from string")
+
 func UuidFromMnemonic(mnemonic []string) (uuid.UUID, error) {
 	mnemonicString := strings.Join(mnemonic, " ")
 	bytes, err := bip39.EntropyFromMnemonic(mnemonicString)
 	if err != nil {
-		return uuid.UUID([16]byte{}), fmt.Errorf("unable to get id from string %s: %w", mnemonicString, err)
+		slog.Error("cant get Uuid from mnemonic", "mnemonic", mnemonic, "err", err)
+		return uuid.UUID([16]byte{}), errors.Join(ErrUUIDFromMnemonic, err)
 	}
 	return uuid.UUID(bytes), nil
 }

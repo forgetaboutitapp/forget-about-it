@@ -30,7 +30,8 @@ environment:
 dependencies:
   flutter_web_plugins:
     sdk: flutter
-
+  integration_test:
+    sdk: flutter
   flutter:
     sdk: flutter
 

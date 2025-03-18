@@ -1,14 +1,12 @@
 package secure
 
 import (
+	"context"
 	"crypto/rand"
 	"database/sql"
-	"encoding/json"
-	"fmt"
-	"io"
+	"errors"
 	"log/slog"
 	"math/big"
-	"net/http"
 
 	"github.com/forgetaboutitapp/forget-about-it/server"
 	"github.com/forgetaboutitapp/forget-about-it/server/pkg/sql_queries"
@@ -27,38 +25,34 @@ func (i Flashcard) Hash() int64 {
 	return i.Id
 }
 
-func PostAllQuestions(userid int64, s Server, w http.ResponseWriter, r *http.Request) {
-	d, err := io.ReadAll(r.Body)
-	if err != nil {
-		slog.Error("Could not read body", "err", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	data, err := ParseFlashcard(d)
-	if err != nil {
-		fmt.Println(string(d))
-		slog.Error("Could not unmarshal data", "data", data, "d", d, "err", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+var ErrCantInitTransaction = errors.New("can't init transaction")
+var ErrCantAddTag = errors.New("can't add tag")
+var ErrCantRemoveQuestion = errors.New("can't remove question")
+var ErrCantUpateQuestion = errors.New("can't update question")
+var ErrUpdateQuestion = errors.New("can't update question")
+var ErrCantAddQuestion = errors.New("can't add question")
+var ErrCantDeleteTag = errors.New("can't delete tag")
+var ErrCantCommit = errors.New("can't commit")
 
+func PostAllQuestions(ctx context.Context, userid int64, s Server, m map[string]any) (map[string]any, error) {
+	data := m["flashcards"].([]Flashcard)
 	slog.Info("got questions list", "data", data)
-	err = func() error {
+	err := func() error {
 		server.DbLock.Lock()
 		defer server.DbLock.Unlock()
-		tx, err := s.OrigDB.BeginTx(r.Context(), &sql.TxOptions{})
+		tx, err := s.OrigDB.BeginTx(ctx, &sql.TxOptions{})
 		if err != nil {
 			slog.Error("can't initialize transaction", "err", err)
-			return err
+			return errors.Join(ErrCantInitTransaction, err)
 		}
 		defer tx.Rollback()
 		qtx := s.Db.WithTx(tx)
 
 		// get old questions
-		oldQuestions, err := qtx.GetAllQuestions(r.Context(), userid)
+		oldQuestions, err := qtx.GetAllQuestions(ctx, userid)
 		if err != nil {
 			slog.Error("can't get old questions", "err", err)
-			return err
+			return errors.Join(ErrCanGetQuestions, err)
 		}
 		fillData(data)
 		oldQuestionsAsFlashcard := []Flashcard{}
@@ -72,62 +66,63 @@ func PostAllQuestions(userid int64, s Server, w http.ResponseWriter, r *http.Req
 		// to delete
 
 		for _, card := range cardsToDelete {
-			err = qtx.UpdateQuestion(r.Context(), sql_queries.UpdateQuestionParams{Question: card.Question, Answer: card.Answer, QuestionID: card.Id, Enabled: 0})
+			err = qtx.UpdateQuestion(ctx, sql_queries.UpdateQuestionParams{Question: card.Question, Answer: card.Answer, QuestionID: card.Id, Enabled: 0})
 			if err != nil {
 				slog.Error("can't remove question", "id", card.Id, "err", err)
-				return err
+				return errors.Join(ErrCantRemoveQuestion, err)
 			}
 		}
 		slog.Info("finished deleting")
 		// to update
 
 		for _, card := range cardsToUpdate {
-			err = qtx.UpdateQuestion(r.Context(), sql_queries.UpdateQuestionParams{Question: card.Question, Answer: card.Answer, QuestionID: card.Id, Enabled: 1})
+			err = qtx.UpdateQuestion(ctx, sql_queries.UpdateQuestionParams{Question: card.Question, Answer: card.Answer, QuestionID: card.Id, Enabled: 1})
 			if err != nil {
 				slog.Error("can't update question", "id", card.Id, "err", err)
-				return err
+				return errors.Join(ErrUpdateQuestion, err)
 			}
 		}
 		slog.Info("finished updating")
 		// to add
 
 		for _, card := range cardsToAdd {
-			err = qtx.AddNewQuestion(r.Context(), sql_queries.AddNewQuestionParams{UserID: userid, Question: card.Question, Answer: card.Answer, QuestionID: card.Id, Enabled: 1})
+			err = qtx.AddNewQuestion(ctx, sql_queries.AddNewQuestionParams{UserID: userid, Question: card.Question, Answer: card.Answer, QuestionID: card.Id, Enabled: 1})
 			if err != nil {
-				slog.Error("can't add question", "id", card.Id, "err", err)
-				return err
+				slog.Error("can't add question", "userid", userid, "id", card.Id, "err", err)
+				return errors.Join(ErrCantAddQuestion, err)
 			}
 		}
 		slog.Info("finished adding")
 
-		err = qtx.DeleteAllTags(r.Context(), userid)
+		err = qtx.DeleteAllTags(ctx, userid)
 		if err != nil {
-			slog.Error("can't delete tags", "err", err)
-			return err
+			return errors.Join(ErrCantDeleteTag, err)
 		}
 		slog.Info("deleted all taggs")
 		for _, val := range data {
 			for _, tag := range val.Tags {
-				err = qtx.AddNewTag(r.Context(), sql_queries.AddNewTagParams{
+				err = qtx.AddNewTag(ctx, sql_queries.AddNewTagParams{
 					QuestionID: int64(val.Id),
 					Tag:        tag,
 				})
 				if err != nil {
 					slog.Error("can't add new tag", "err", err)
-					return err
+					return errors.Join(ErrCantAddTag)
 				}
 			}
 		}
 		err = tx.Commit()
 		if err != nil {
 			slog.Error("unable to commit", "err", err)
-			return err
+			return errors.Join(ErrCantCommit, err)
 		}
 		return nil
 	}()
 	if err != nil {
-		return
+		slog.Error("error", "err", err)
+		return nil, err
 	}
+	return nil, nil
 }
 
 func fillData(data []Flashcard) {
@@ -193,13 +188,4 @@ func UpdateCards(submittedQuestions []Flashcard, oldQuestions []Flashcard) ([]Fl
 	}
 	return cardsToDelete.Slice(), cardsToAdd.Slice(), cardsToUpdate.Slice()
 
-}
-
-func ParseFlashcard(str []byte) ([]Flashcard, error) {
-	var data []Flashcard
-	err := json.Unmarshal(str, &data)
-	if err != nil {
-		return []Flashcard{}, fmt.Errorf("cannot parse json (%w)", err)
-	}
-	return data, nil
 }

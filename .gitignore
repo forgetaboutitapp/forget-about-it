@@ -58,3 +58,5 @@ server/pkg/sql_queries
 server/web
 
 algorithms-built/*
+
+/frontend/android/app/.cxx

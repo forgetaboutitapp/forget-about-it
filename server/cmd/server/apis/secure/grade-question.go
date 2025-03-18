@@ -1,53 +1,57 @@
 package secure
 
 import (
-	"encoding/json"
-	"io"
+	"context"
+	"errors"
 	"log/slog"
-	"net/http"
 	"time"
 
 	"github.com/forgetaboutitapp/forget-about-it/server"
 	"github.com/forgetaboutitapp/forget-about-it/server/pkg/sql_queries"
 )
 
-func GradeQuestion(userid int64, s Server, w http.ResponseWriter, r *http.Request) {
+var ErrCantSaveGrades = errors.New("can't save grades to the database")
+var ErrCorrectValIsNotBoolean = errors.New("is-correct val is not boolean")
+var ErrMapIsInvalidType = errors.New("map is invalid type")
+
+func GradeQuestion(ctx context.Context, userid int64, s Server, m map[string]any) (map[string]any, error) {
 	slog.Info("Grading question")
-	d, err := io.ReadAll(r.Body)
-	if err != nil {
-		slog.Error("Could not read body", "err", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
+
+	questionId, correctType := m["question-id"].(float64)
+	if !correctType {
+		slog.Error("map is invalid type", "question-id", m["question-id"])
+		return nil, ErrMapIsInvalidType
 	}
-	var mapData map[string]any
-	err = json.Unmarshal(d, &mapData)
-	if err != nil {
-		slog.Error("unable to unmarshal mapData", "data", string(d), "err", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
+	correct, correctType := (m["is-correct"]).(float64)
+	if !correctType {
+		slog.Error("map is invalid type", "is-correct", m["is-correct"])
+		return nil, ErrMapIsInvalidType
 	}
-	questionId := int64((mapData["question-id"]).(float64))
-	correct := int64((mapData["question-id"]).(float64))
 	result := 0
-	if correct != 0 {
+	if correct == 0 {
+		result = 0
+	} else if correct == 1 {
 		result = 1
+	} else {
+		slog.Error("is-correct val is invalid")
+		return nil, ErrCorrectValIsNotBoolean
 	}
-	err = func() error {
+	err := func() error {
 		server.DbLock.Lock()
 		defer server.DbLock.Unlock()
-		return s.Db.GradeQuestion(r.Context(), sql_queries.GradeQuestionParams{
-			QuestionID: questionId,
+		return s.Db.GradeQuestion(ctx, sql_queries.GradeQuestionParams{
+			QuestionID: int64(questionId),
 			Result:     int64(result),
 			Timestamp:  time.Now().UnixMicro(),
 		})
 	}()
 	if err != nil {
 		slog.Error("unable to save grades to the database", "params", sql_queries.GradeQuestionParams{
-			QuestionID: questionId,
+			QuestionID: int64(questionId),
 			Result:     int64(result),
 			Timestamp:  time.Now().UnixMicro(),
 		}, "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return nil, errors.Join(ErrCantSaveGrades, err)
 	}
+	return nil, nil
 }

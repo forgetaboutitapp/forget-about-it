@@ -3,6 +3,8 @@ package secure
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"io"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -15,7 +17,7 @@ import (
 type Server struct {
 	OrigDB *sql.DB
 	Db     *sql_queries.Queries
-	Next   func(token int64, s Server, w http.ResponseWriter, r *http.Request)
+	Next   func(ctx context.Context, token int64, s Server, body map[string]any) (map[string]any, error)
 }
 
 func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -63,6 +65,40 @@ func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Error("Unable to register login", "token", token, "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
-	s.Next(users[0], s, w, r)
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		slog.Error("Unable to read body", "token", token, "err", err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	m := map[string]any{}
+	if len(body) != 0 {
+		err = json.Unmarshal(body, &m)
+		if err != nil {
+			slog.Error("Unable to unmarsal body", "body", body, "err", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}
+	returnMap, err := s.Next(r.Context(), users[0], s, m)
+	if err != nil {
+		slog.Error("Writing server error", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if returnMap != nil {
+		b, err := json.Marshal(returnMap)
+		if err != nil {
+			slog.Error("cannot marshal returnMap", "returnMap", returnMap, "error", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, err = w.Write([]byte(b))
+		if err != nil {
+			panic(err)
+		}
+	}
 }

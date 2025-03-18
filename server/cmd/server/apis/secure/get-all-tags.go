@@ -2,9 +2,9 @@ package secure
 
 import (
 	"cmp"
-	"encoding/json"
+	"context"
+	"errors"
 	"log/slog"
-	"net/http"
 	"slices"
 
 	"github.com/forgetaboutitapp/forget-about-it/server"
@@ -16,17 +16,16 @@ type TagSet struct {
 	NumQuestions int    `json:"num-questions"`
 }
 
-func GetAllTags(userid int64, s Server, w http.ResponseWriter, r *http.Request) {
+func GetAllTags(ctx context.Context, userid int64, s Server, m map[string]any) (map[string]any, error) {
 	questions, err := func() ([]sql_queries.GetAllQuestionsRow, error) {
 		server.DbLock.RLock()
 		defer server.DbLock.RUnlock()
-		res, err := s.Db.GetAllQuestions(r.Context(), userid)
+		res, err := s.Db.GetAllQuestions(ctx, userid)
 		return res, err
 	}()
 	if err != nil {
 		slog.Error("can't get questions by userid", "uuid", userid, "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return nil, errors.Join(ErrCanGetQuestions, err)
 	}
 	tagsMap := make(map[string][]int64)
 	for _, question := range questions {
@@ -34,13 +33,12 @@ func GetAllTags(userid int64, s Server, w http.ResponseWriter, r *http.Request) 
 		tags, err := func() ([]string, error) {
 			server.DbLock.RLock()
 			defer server.DbLock.RUnlock()
-			tags, err := s.Db.GetTagsByQuestion(r.Context(), question.QuestionID)
+			tags, err := s.Db.GetTagsByQuestion(ctx, question.QuestionID)
 			return tags, err
 		}()
 		if err != nil {
 			slog.Error("can't get questions by userid", "uuid", userid, "err", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
+			return nil, errors.Join(ErrCanGetQuestions, err)
 		}
 		for _, tag := range tags {
 			tagsMap[tag] = append(tagsMap[tag], question.QuestionID)
@@ -53,9 +51,5 @@ func GetAllTags(userid int64, s Server, w http.ResponseWriter, r *http.Request) 
 	slices.SortFunc(tagSet, func(a, b TagSet) int {
 		return cmp.Compare(a.Tag, b.Tag)
 	})
-	data, err := json.Marshal(tagSet)
-	if err != nil {
-		panic(err)
-	}
-	w.Write(data)
+	return map[string]any{"tag-set": tagSet}, nil
 }

@@ -1,31 +1,20 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"io/fs"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/forgetaboutitapp/forget-about-it/server"
 	"github.com/forgetaboutitapp/forget-about-it/server/cmd/server/apis/login"
 	"github.com/forgetaboutitapp/forget-about-it/server/cmd/server/apis/secure"
 	dbUtils "github.com/forgetaboutitapp/forget-about-it/server/pkg/db_utils"
-	"github.com/forgetaboutitapp/forget-about-it/server/pkg/sql_queries"
 	"github.com/rs/cors"
 )
 
 func main() {
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(5*time.Second))
-	defer cancel()
-	db, err := dbUtils.OpenDatabase(ctx)
-	db.SetMaxOpenConns(1)
-	if err != nil {
-		panic(err)
-	}
-	q := sql_queries.New(db)
-
+	q, db := dbUtils.GetDB()
 	realSub, err := fs.Sub(server.Files, "web")
 	if err != nil {
 		panic(err)

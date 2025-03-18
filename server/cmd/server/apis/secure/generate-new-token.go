@@ -2,10 +2,8 @@ package secure
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
+	"errors"
 	"log/slog"
-	"net/http"
 	"strings"
 	"time"
 
@@ -15,25 +13,19 @@ import (
 	"github.com/google/uuid"
 )
 
-func GenerateNewToken(userid int64, s Server, w http.ResponseWriter, r *http.Request) {
+var ErrMnemonicFromUUID = errors.New("can't get mnemonic from uuid")
+var ErrNewLogin = errors.New("can't create a new login")
+
+func GenerateNewToken(ctx context.Context, userid int64, s Server, m map[string]any) (map[string]any, error) {
 	newUUID := uuid.New()
 	slog.Info("About to get new mnemonic")
 	mnenmonic, err := uuidUtils.NewMnemonicFromUuid(newUUID)
 	if err != nil {
 		slog.Error("can't get mnemonic from uuid", "uuid", newUUID, "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return nil, errors.Join(ErrMnemonicFromUUID, err)
 	}
-	slog.Info("About to write to channel")
 
-	slog.Info("About to generate json")
-	jsonVal, err := json.Marshal(map[string]any{"type": "ok", "newUUID": newUUID.String(), "mnemonic": strings.Split(mnenmonic, " ")})
-	if err != nil {
-		panic(err)
-	}
 	slog.Info("about to write to db")
-	timeoutContext, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
 	params := sql_queries.AddLoginParams{
 		LoginUuid:         newUUID.String(),
 		UserID:            userid,
@@ -44,29 +36,21 @@ func GenerateNewToken(userid int64, s Server, w http.ResponseWriter, r *http.Req
 	err = func() error {
 		server.DbLock.Lock()
 		defer server.DbLock.Unlock()
-		return s.Db.AddLogin(timeoutContext, params)
+		return s.Db.AddLogin(ctx, params)
 	}()
 	if err != nil {
 		slog.Error("cannot create new login", "params", params, "err", err)
-		jsonVal, err := json.Marshal(map[string]string{"type": "error", "message": "Internal Server Error"})
-		if err != nil {
-			panic(err)
-		}
-		fmt.Fprintf(w, "%s\n\n", jsonVal)
-		return
+		return nil, errors.Join(ErrNewLogin, err)
 	}
-	slog.Info("about to write to client")
 
-	_, err = fmt.Fprintf(w, "%s\n\n", jsonVal)
+	slog.Info("About to generate json")
+	jsonVal := map[string]any{"type": "ok", "newUUID": newUUID.String(), "mnemonic": strings.Split(mnenmonic, " ")}
 
-	if err != nil {
-		slog.Error("write to client", "newUUID", newUUID, "mnemonic", mnenmonic, "err", err)
-		return
-	}
 	slog.Info("About to done")
 	func() {
 		server.MutexUsersWaiting.Lock()
 		defer server.MutexUsersWaiting.Unlock()
 		server.UsersWaiting[userid] = struct{}{}
 	}()
+	return jsonVal, nil
 }

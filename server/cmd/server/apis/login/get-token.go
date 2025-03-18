@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -45,26 +46,43 @@ func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	b, err := RealGetToken(r.Context(), data, s)
+	if err != nil {
+		slog.Error("Writing server error", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write([]byte(b))
+	if err != nil {
+		panic(err)
+	}
+
+}
+
+var ErrParseToken = errors.New("cannot parse tokens")
+var ErrNoUsers = errors.New("no users")
+var ErrUserIdNotUnique = errors.New("there should be only one user with a given userid")
+var ErrCantRegisterLogin = errors.New("cannot register logins")
+var ErrCantEncodeToken = errors.New("cannot encode token")
+
+// returns if successfull
+func RealGetToken(ctx context.Context, data postData, s Server) (string, error) {
 	var token uuid.UUID
 	if t, err := uuid.Parse(data.Token); err == nil {
 		token = t
 	} else {
 		if data.Token != "" {
 			slog.Error("unable to parse token", "data", data, "err", err)
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-
+			return "", errors.Join(ErrParseToken, err)
 		}
 		token, err = uuidUtils.UuidFromMnemonic(data.TwelveWordsData)
 		if err != nil {
 			slog.Error("Could not get uuid from twelve words", "words", data.TwelveWordsData, "err", err)
-			w.WriteHeader(http.StatusUnauthorized)
-			return
+			return "", errors.Join(ErrParseToken, err)
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(5*time.Second))
-	defer cancel()
 	users, err := func() ([]int64, error) {
 		server.DbLock.RLock()
 		defer server.DbLock.RUnlock()
@@ -73,21 +91,16 @@ func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 	if err != nil {
 		slog.Error("Could not find user", "token-uuid", token.String(), "err", err)
-		w.WriteHeader(http.StatusUnauthorized)
-		return
+		return "", err
 	}
 	if len(users) == 0 {
 		slog.Error("no users", "token-uuid", token.String())
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return "", ErrNoUsers
 	} else if len(users) > 1 {
 		slog.Error("There should be only one user with a given userid", "token-uuid", token.String())
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return "", ErrUserIdNotUnique
 	}
 
-	timeout, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
 	slog.Info("Registering", "params", sql_queries.RegisterLoginParams{
 		LoginUuid:   token.String(),
 		CurrentTime: time.Now().Unix(),
@@ -95,29 +108,21 @@ func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err = func() error {
 		server.DbLock.Lock()
 		defer server.DbLock.Unlock()
-		return s.Db.RegisterLogin(timeout, sql_queries.RegisterLoginParams{
+		return s.Db.RegisterLogin(ctx, sql_queries.RegisterLoginParams{
 			LoginUuid:   token.String(),
 			CurrentTime: time.Now().Unix(),
 		})
 	}()
 	if err != nil {
 		slog.Error("Unable to register login", "token", token, "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		return "", errors.Join(ErrCantRegisterLogin, err)
 	}
 
-	w.WriteHeader(http.StatusOK)
 	b, err := json.Marshal(map[string]string{"token": token.String()})
 	if err != nil {
 		slog.Error("Could not encode token", "val", map[string]string{"token": token.String()}, "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return "", errors.Join(ErrCantEncodeToken, err)
 	}
-	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(b)
-	if err != nil {
-		panic(err)
-	}
-
 	slog.Info("about to look for the old key")
 	func() {
 		slog.Info("about to lock mutex")
@@ -128,6 +133,7 @@ func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		slog.Info("done deleting")
 
 	}()
-
 	slog.Info("Done")
+	return string(b), nil
+
 }

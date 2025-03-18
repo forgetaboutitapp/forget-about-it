@@ -1,12 +1,11 @@
 package secure
 
 import (
+	"context"
 	"database/sql"
-	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
 	"log/slog"
-	"net/http"
 	"strings"
 	"time"
 
@@ -16,43 +15,44 @@ import (
 	"github.com/tetratelabs/wazero"
 )
 
-func GetNextQuestion(userid int64, s Server, w http.ResponseWriter, r *http.Request) {
+var ErrCantGetDefaultAlgo = errors.New("can't get default algo")
+var ErrCantGetSpacingAlgo = errors.New("can't get spacing algo")
+var ErrCantGetNewModBuilder = errors.New("can't get new mod builder")
+var ErrCantInstantiate = errors.New("can't instantiate")
+var ErrCantGetAllGrades = errors.New("can't get all grades")
+var ErrCantGetTagForQuestion = errors.New("can't get tag for question")
+var ErrCantGetTagForGrade = errors.New("can't get tag for grade")
+var ErrCantGetAddCard = errors.New("can't get add-card function")
+var ErrCantGetGradeCard = errors.New("can't get grade-card function")
+var ErrCantAllocate = errors.New("can't allocate")
+var ErrCantFree = errors.New("can't free")
+var ErrCantCallNextCard = errors.New("can't call next card")
+var ErrCantReadBytes = errors.New("can't read bytes")
+
+func GetNextQuestion(ctx context.Context, userid int64, s Server, m map[string]any) (map[string]any, error) {
 	slog.Info("Getting next question")
-	tagsSent := []string{}
-	d, err := io.ReadAll(r.Body)
-	if err != nil {
-		slog.Error("can't read body", "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	err = json.Unmarshal(d, &tagsSent)
-	if err != nil {
-		slog.Error("can't unmarshal", "d", string(d), "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	tagsSent := m["tagSent"].([]string)
 	tagsSentSet := set.From(tagsSent)
 	defaultAlgo, err := func() (sql.NullInt64, error) {
 		server.DbLock.RLock()
 		defer server.DbLock.RUnlock()
-		defaultAlgo, err := s.Db.GetDefaultAlgorithm(r.Context(), userid)
+		defaultAlgo, err := s.Db.GetDefaultAlgorithm(ctx, userid)
 		return defaultAlgo, err
 	}()
 	if err != nil {
 		slog.Error("can't get default algo", "uuid", userid, "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return nil, errors.Join(ErrCantGetDefaultAlgo, err)
 	}
 	algos, err := func() ([]sql_queries.GetSpacingAlgorithmsRow, error) {
 		server.DbLock.RLock()
 		defer server.DbLock.RUnlock()
-		a, b := s.Db.GetSpacingAlgorithms(r.Context())
+		a, b := s.Db.GetSpacingAlgorithms(ctx)
 		return a, b
 	}()
 	if err != nil {
 		slog.Error("can't get spacing algorithm", "uuid", userid, "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return nil, errors.Join(ErrCantGetSpacingAlgo, err)
+
 	}
 	var algo sql_queries.GetSpacingAlgorithmsRow
 	if defaultAlgo.Valid {
@@ -69,7 +69,6 @@ func GetNextQuestion(userid int64, s Server, w http.ResponseWriter, r *http.Requ
 		panic("There are no algorithms available")
 	}
 
-	ctx := r.Context()
 	runtime := wazero.NewRuntime(ctx)
 
 	defer runtime.Close(ctx) // This closes everything this Runtime created.
@@ -77,8 +76,7 @@ func GetNextQuestion(userid int64, s Server, w http.ResponseWriter, r *http.Requ
 		Instantiate(ctx)
 	if err != nil {
 		slog.Error("can't make a new module builder", "algo", algo.AlgorithmID, "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return nil, errors.Join(ErrCantGetNewModBuilder, err)
 	}
 	initializationFunctions := strings.Split(algo.InitializationFunctions, ",")
 	modConfig := wazero.NewModuleConfig().WithStartFunctions()
@@ -88,8 +86,7 @@ func GetNextQuestion(userid int64, s Server, w http.ResponseWriter, r *http.Requ
 	mod, err := runtime.InstantiateWithConfig(ctx, algo.Algorithm, modConfig)
 	if err != nil {
 		slog.Error("can't instantiate", "algo", algo.AlgorithmID, "modConfig", modConfig, "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return nil, errors.Join(ErrCantInstantiate, err)
 	}
 	addCard := mod.ExportedFunction("add-card")
 	gradeCard := mod.ExportedFunction("grade-card")
@@ -99,22 +96,20 @@ func GetNextQuestion(userid int64, s Server, w http.ResponseWriter, r *http.Requ
 	allGrades, err := func() ([]sql_queries.QuestionsLog, error) {
 		server.DbLock.RLock()
 		defer server.DbLock.RUnlock()
-		return s.Db.GetAllGrades(r.Context(), userid)
+		return s.Db.GetAllGrades(ctx, userid)
 	}()
 	if err != nil {
 		slog.Error("can't get all grades", "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return nil, errors.Join(ErrCantGetAllGrades, err)
 	}
 	allQuestions, err := func() ([]sql_queries.GetAllQuestionsRow, error) {
 		server.DbLock.RLock()
 		defer server.DbLock.RUnlock()
-		return s.Db.GetAllQuestions(r.Context(), userid)
+		return s.Db.GetAllQuestions(ctx, userid)
 	}()
 	if err != nil {
 		slog.Error("can't get all questions", "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return nil, errors.Join(ErrCanGetQuestions)
 	}
 
 	allGradesWithRightTags := []sql_queries.QuestionsLog{}
@@ -124,14 +119,12 @@ func GetNextQuestion(userid int64, s Server, w http.ResponseWriter, r *http.Requ
 		tags, err := func() ([]string, error) {
 			server.DbLock.RLock()
 			defer server.DbLock.RUnlock()
-			tags, err := s.Db.GetTagsByQuestion(r.Context(), question.QuestionID)
+			tags, err := s.Db.GetTagsByQuestion(ctx, question.QuestionID)
 			return tags, err
 		}()
 		if err != nil {
 			slog.Error("can't get tag for question", "questionid", question.QuestionID, "err", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-
+			return nil, errors.Join(ErrCantGetTagForQuestion, err)
 		}
 		tagsSet := set.From(tags)
 		found := false
@@ -149,13 +142,12 @@ func GetNextQuestion(userid int64, s Server, w http.ResponseWriter, r *http.Requ
 		tags, err := func() ([]string, error) {
 			server.DbLock.RLock()
 			defer server.DbLock.RUnlock()
-			tags, err := s.Db.GetTagsByQuestion(r.Context(), grade.QuestionID)
+			tags, err := s.Db.GetTagsByQuestion(ctx, grade.QuestionID)
 			return tags, err
 		}()
 		if err != nil {
 			slog.Error("can't get tag for grade", "questionid", grade.QuestionID, "err", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
+			return nil, errors.Join(ErrCantGetTagForGrade, err)
 
 		}
 		tagsSet := set.From(tags)
@@ -174,63 +166,54 @@ func GetNextQuestion(userid int64, s Server, w http.ResponseWriter, r *http.Requ
 		_, err = addCard.Call(ctx, uint64(question.QuestionID))
 		if err != nil {
 			slog.Error("Unable to call add-card function", "algo", algo.AlgorithmID, "err", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
+			return nil, errors.Join(ErrCantGetAddCard, err)
 		}
 	}
 	for _, grades := range allGradesWithRightTags {
 		_, err := gradeCard.Call(ctx, uint64(grades.QuestionID), uint64(grades.Timestamp), uint64(grades.Result))
 		if err != nil {
 			slog.Error("Unable to call grade-card function", "algo", algo.AlgorithmID, "err", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
+			return nil, errors.Join(ErrCantGetGradeCard, err)
 		}
 	}
 	addr, err := malloc.Call(ctx, 24)
 	if err != nil {
 		slog.Error("Unable to allocate", "algo", algo.AlgorithmID, "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return nil, errors.Join(ErrCantAllocate, err)
 	}
 	_, err = getCard.Call(ctx, addr[0], uint64(time.Now().Unix()))
 	if err != nil {
 		slog.Error("Unable to get next card", "algo", algo.AlgorithmID, "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return nil, errors.Join(ErrCantCallNextCard, err)
 	}
 
 	lenDueCards, inRange := mod.Memory().ReadUint32Le(uint32(addr[0]))
 	if !inRange {
-		slog.Error("Cannot read 4 bytes in getting amount of due cards", "algo", algo.AlgorithmID, "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		slog.Error("Cannot read 4 bytes in getting amount of due cards", "algo", algo.AlgorithmID)
+		return nil, ErrCantReadBytes
 	}
 
 	lenNonDueCards, inRange := mod.Memory().ReadUint32Le(uint32(addr[0] + 4))
 	if !inRange {
-		slog.Error("Cannot read 4 bytes in getting amount of non due cards", "algo", algo.AlgorithmID, "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		slog.Error("Cannot read 4 bytes in getting amount of non due cards", "algo", algo.AlgorithmID)
+		return nil, ErrCantReadBytes
 	}
 
 	lenNewCards, inRange := mod.Memory().ReadUint32Le(uint32(addr[0] + 8))
 	if !inRange {
-		slog.Error("Cannot read 4 bytes in getting amount of new cards", "algo", algo.AlgorithmID, "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		slog.Error("Cannot read 4 bytes in getting amount of new cards", "algo", algo.AlgorithmID)
+		return nil, ErrCantReadBytes
 	}
 	nextCard, inRange := mod.Memory().ReadUint64Le(uint32(addr[0] + 16))
 	if !inRange {
-		slog.Error("Cannot read 8 bytes in getting due card", "algo", algo.AlgorithmID, "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		slog.Error("Cannot read 8 bytes in getting due card", "algo", algo.AlgorithmID)
+		return nil, ErrCantReadBytes
 	}
 
 	_, err = free.Call(ctx, addr[0])
 	if err != nil {
 		slog.Error("Cannot call free", "algo", algo.AlgorithmID, "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return nil, ErrCantReadBytes
 	}
 	question := ""
 	answer := ""
@@ -244,16 +227,9 @@ func GetNextQuestion(userid int64, s Server, w http.ResponseWriter, r *http.Requ
 	}
 	if !found {
 		slog.Error("Cannot find question id", "nextCard", nextCard)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return nil, ErrCanGetQuestions
 
 	}
 	resultMap := map[string]any{"amount-due-cards": lenDueCards, "amount-new-cards": lenNewCards, "amount-non-due-cards": lenNonDueCards, "id": nextCard, "question": question, "answer": answer}
-	jsonText, err := json.Marshal(resultMap)
-	if err != nil {
-		slog.Error("Cannot marshal text", "map", resultMap, "err", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	w.Write(jsonText)
+	return resultMap, nil
 }
