@@ -16,10 +16,10 @@ class RemoteSettings with _$RemoteSettings {
   final IList<RemoteDevice>? remoteDevices;
 
   static RemoteSettings fromJSON(dynamic json) {
-    if (json['remote-devices'] == null) {
+    if (json?['settings']?['remote-devices'] == null) {
       return RemoteSettings(remoteDevices: null);
     }
-    final List<RemoteDevice> remoteList = json['remote-devices']
+    final List<RemoteDevice> remoteList = json['settings']['remote-devices']
         .map<RemoteDevice>((e) => RemoteDevice.fromJSON(e))
         .toList();
     return RemoteSettings(remoteDevices: remoteList.toIList());

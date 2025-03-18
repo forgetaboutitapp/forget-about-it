@@ -4,15 +4,55 @@ import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() async {
+  test('Test unparsing', () {
+    final cmpText =
+        '1 | Q1 | A1 | T1 T2\n2 | Q2 | A2 | T1 T3\n3 | Q3  Q3 | A3 | T1 T3\n4 | Q4 \\n Q4 | A4 \\n A4 | T1 T3\n5 | Q5 \\\\ \\n \\| Q5 | A5 \\\\ A5 \\|  | T1 T3';
+    final t = unparse(
+      <Flashcard>[
+        Flashcard(
+          id: 1,
+          question: 'Q1',
+          answer: 'A1',
+          tags: ['T1', 'T2'].toIList(),
+        ),
+        Flashcard(
+          id: 2,
+          question: 'Q2',
+          answer: 'A2',
+          tags: ['T1', 'T3'].toIList(),
+        ),
+        Flashcard(
+          id: 3,
+          question: 'Q3  Q3',
+          answer: 'A3',
+          tags: ['T1', 'T3'].toIList(),
+        ),
+        Flashcard(
+          id: 4,
+          question: 'Q4 \n Q4',
+          answer: 'A4 \n A4',
+          tags: ['T1', 'T3'].toIList(),
+        ),
+        Flashcard(
+          id: 5,
+          question: 'Q5 \\ \n | Q5',
+          answer: 'A5 \\ A5 | ',
+          tags: ['T1', 'T3'].toIList(),
+        ),
+      ].toIList(),
+    );
+    assert(t == cmpText);
+  });
   test('Test parsing', () {
     assert(
       parse('|Q1|A1|Tag1 Tag2') ==
           [
             Flashcard(
-                id: null,
-                question: 'Q1',
-                answer: 'A1',
-                tags: ['Tag1', 'Tag2'].toIList())
+              id: null,
+              question: 'Q1',
+              answer: 'A1',
+              tags: ['Tag1', 'Tag2'].toIList(),
+            )
           ].toIList(),
     );
     assert(
@@ -24,7 +64,11 @@ void main() async {
                 answer: 'A1',
                 tags: ['Tag1', 'Tag2'].toIList()),
             Flashcard(
-                id: null, question: 'Q2', answer: 'A2', tags: ['Tag'].toIList())
+              id: null,
+              question: 'Q2',
+              answer: 'A2',
+              tags: ['Tag'].toIList(),
+            )
           ].toIList(),
     );
 

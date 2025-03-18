@@ -21,8 +21,9 @@ class QRDialog extends HookWidget {
     useEffect(() {
       bool isCancelled = false;
       remoteServer.generateNewToken().then((e) async {
+        qrCodeData.value = e;
         while (!isCancelled) {
-          remoteServer.checkNewToken().then((cancelled) {
+          await remoteServer.checkNewToken().then((cancelled) {
             if (cancelled) {
               isCancelled = true;
               if (context.mounted) {
@@ -30,6 +31,7 @@ class QRDialog extends HookWidget {
               }
             }
           });
+          await Future.delayed(Duration(seconds: 1));
         }
       });
       return () {
@@ -53,12 +55,12 @@ class QRDialog extends HookWidget {
                 LoginMethod.twelveWords =>
                   TwelveWordView(twelveWords: decode['mnemonic']),
                 LoginMethod.camera => QrImageViewer(
-                    uuid: decode['newUUID'],
+                    uuid: decode['new-uuid'],
                     remoteServer: remoteServer,
                   ),
                 LoginMethod.token => TokenView(
                     remoteHost: remoteServer.getRemoteHost(),
-                    uuid: decode['newUUID'],
+                    uuid: decode['new-uuid'],
                   ),
               },
             ),

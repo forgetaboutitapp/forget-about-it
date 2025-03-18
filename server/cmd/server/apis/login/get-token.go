@@ -67,6 +67,7 @@ var ErrCantRegisterLogin = errors.New("cannot register logins")
 var ErrCantEncodeToken = errors.New("cannot encode token")
 
 func RealGetToken(ctx context.Context, data PostData, s Server) (string, error) {
+	slog.Info("getting token", "data", data)
 	var token uuid.UUID
 	if t, err := uuid.Parse(data.Token); err == nil {
 		token = t

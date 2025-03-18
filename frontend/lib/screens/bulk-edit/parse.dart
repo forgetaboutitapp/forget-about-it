@@ -6,14 +6,14 @@ import 'package:flutter/material.dart';
 
 String unparse(IList<Flashcard> flashcards) => flashcards
     .map((e) =>
-        '${_decode(e.id)}|${_decode(e.question)}|${e.answer}|${e.tags.map((e) => _decode(e)).join(' ')}')
+        '${_decode(e.id)} | ${_decode(e.question)} | ${_decode(e.answer)} | ${e.tags.map((e) => _decode(e)).join(' ')}')
     .join('\n');
 
 String _decode<A>(A a) => a
     .toString()
+    .replaceAll('\\', '\\\\')
     .replaceAll('\n', '\\n')
     .replaceAll('|', '\\|')
-    .replaceAll('\\', '\\\\')
     .replaceAll('%', '\\%');
 
 IList<Flashcard> parse(String data) {

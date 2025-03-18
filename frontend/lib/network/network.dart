@@ -148,15 +148,15 @@ class RemoteServer implements FetchData {
   @override
   Future<String> getAllTags() async {
     try {
-      final remoteSettings = await client
+      final getAllTags = await client
           .get(Uri.parse('$remoteHost/api/v0/secure/get-all-tags'), headers: {
         'Cache-Control': 'no-cache',
         'Authorization': 'Bearer $token'
       });
-      if (remoteSettings.statusCode != 200) {
-        throw ServerException(code: remoteSettings.statusCode);
+      if (getAllTags.statusCode != 200) {
+        throw ServerException(code: getAllTags.statusCode);
       }
-      return remoteSettings.body;
+      return getAllTags.body;
     } on http.ClientException catch (_) {
       throw ServerException(code: -1);
     }

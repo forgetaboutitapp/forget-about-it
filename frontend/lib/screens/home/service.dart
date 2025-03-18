@@ -5,6 +5,8 @@ import 'package:app/screens/home/model.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 
 Future<IList<Tag>> getAllTags(FetchData fd) async {
-  final List<dynamic> parsedVal = jsonDecode(await fd.getAllTags());
-  return parsedVal.map((e) => Tag.fromJson(e)).toIList();
+  final parsedVal = jsonDecode(await fd.getAllTags());
+  return (parsedVal['tag-set'] as List<dynamic>)
+      .map((e) => Tag.fromJson(e))
+      .toIList();
 }
