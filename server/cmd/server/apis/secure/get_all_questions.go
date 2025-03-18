@@ -12,7 +12,7 @@ import (
 var ErrCanGetQuestions = errors.New("can't get questions")
 var ErrCantGetTag = errors.New("can't get tag")
 
-func GetAllQuestions(ctx context.Context, userid int64, s Server, m map[string]any) (map[string]any, error) {
+func GetAllQuestions(ctx context.Context, userid int64, s Server, _ map[string]any) (map[string]any, error) {
 	res, err := func() ([]sql_queries.GetAllQuestionsRow, error) {
 		server.DbLock.RLock()
 		defer server.DbLock.RUnlock()

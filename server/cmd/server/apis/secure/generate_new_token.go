@@ -16,7 +16,7 @@ import (
 var ErrMnemonicFromUUID = errors.New("can't get mnemonic from uuid")
 var ErrNewLogin = errors.New("can't create a new login")
 
-func GenerateNewToken(ctx context.Context, userid int64, s Server, m map[string]any) (map[string]any, error) {
+func GenerateNewToken(ctx context.Context, userid int64, s Server, _ map[string]any) (map[string]any, error) {
 	newUUID := uuid.New()
 	slog.Info("About to get new mnemonic")
 	mnenmonic, err := uuidUtils.NewMnemonicFromUuid(newUUID)
@@ -44,7 +44,7 @@ func GenerateNewToken(ctx context.Context, userid int64, s Server, m map[string]
 	}
 
 	slog.Info("About to generate json")
-	jsonVal := map[string]any{"type": "ok", "newUUID": newUUID.String(), "mnemonic": strings.Split(mnenmonic, " ")}
+	jsonVal := map[string]any{"new-uuid": newUUID.String(), "mnemonic": strings.Split(mnenmonic, " ")}
 
 	slog.Info("About to done")
 	func() {

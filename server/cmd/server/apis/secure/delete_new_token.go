@@ -7,7 +7,7 @@ import (
 	"github.com/forgetaboutitapp/forget-about-it/server"
 )
 
-func DeleteNewToken(ctx context.Context, userid int64, s Server, m map[string]any) (map[string]any, error) {
+func DeleteNewToken(ctx context.Context, userid int64, s Server, _ map[string]any) (map[string]any, error) {
 	slog.Info("Deleting Token of user", "userid", userid)
 	slog.Info("Tokens present", "users waiting for a login", server.UsersWaiting)
 	func() {

@@ -31,7 +31,7 @@ var ErrCantReadBytes = errors.New("can't read bytes")
 
 func GetNextQuestion(ctx context.Context, userid int64, s Server, m map[string]any) (map[string]any, error) {
 	slog.Info("Getting next question")
-	tagsSent := m["tagSent"].([]string)
+	tagsSent := m["tag-sent"].([]string)
 	tagsSentSet := set.From(tagsSent)
 	defaultAlgo, err := func() (sql.NullInt64, error) {
 		server.DbLock.RLock()

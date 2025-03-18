@@ -7,7 +7,7 @@ import (
 	"github.com/forgetaboutitapp/forget-about-it/server"
 )
 
-func CheckNewToken(ctx context.Context, userid int64, s Server, m map[string]any) (map[string]any, error) {
+func CheckNewToken(ctx context.Context, userid int64, s Server, _ map[string]any) (map[string]any, error) {
 	server.MutexUsersWaiting.Lock()
 	defer server.MutexUsersWaiting.Unlock()
 	_, found := server.UsersWaiting[userid]

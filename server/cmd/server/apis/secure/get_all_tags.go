@@ -16,7 +16,7 @@ type TagSet struct {
 	NumQuestions int    `json:"num-questions"`
 }
 
-func GetAllTags(ctx context.Context, userid int64, s Server, m map[string]any) (map[string]any, error) {
+func GetAllTags(ctx context.Context, userid int64, s Server, _ map[string]any) (map[string]any, error) {
 	questions, err := func() ([]sql_queries.GetAllQuestionsRow, error) {
 		server.DbLock.RLock()
 		defer server.DbLock.RUnlock()

@@ -21,7 +21,7 @@ type Server struct {
 	OrigDB *sql.DB
 }
 
-type postData struct {
+type PostData struct {
 	TwelveWordsData []string `json:"twelve-words"`
 	Token           string   `json:"token"`
 }
@@ -32,7 +32,7 @@ func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	var data postData
+	var data PostData
 	d, err := io.ReadAll(r.Body)
 	if err != nil {
 		slog.Error("Could not read body", "err", err)
@@ -66,8 +66,7 @@ var ErrUserIdNotUnique = errors.New("there should be only one user with a given 
 var ErrCantRegisterLogin = errors.New("cannot register logins")
 var ErrCantEncodeToken = errors.New("cannot encode token")
 
-// returns if successfull
-func RealGetToken(ctx context.Context, data postData, s Server) (string, error) {
+func RealGetToken(ctx context.Context, data PostData, s Server) (string, error) {
 	var token uuid.UUID
 	if t, err := uuid.Parse(data.Token); err == nil {
 		token = t
