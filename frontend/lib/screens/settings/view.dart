@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import 'package:app/network/interfaces.dart';
-import 'package:app/screens/settings/model.dart';
+import 'package:app/screens/settings/add_algorithm.dart';
+import 'package:app/screens/settings/models/model.dart';
 import 'package:app/screens/settings/qr_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -13,13 +14,15 @@ class SettingsScreen extends HookConsumerWidget {
   static const location = '/settings';
   final bool curDarkMode;
   final FetchData remoteServer;
+  final GenericFilepicker filepicker;
   final FutureOr<void> Function(bool) switchDarkMode;
-  const SettingsScreen(
-      {super.key,
-      required this.curDarkMode,
-      required this.remoteServer,
-      required this.switchDarkMode,
-      requird});
+  const SettingsScreen({
+    super.key,
+    required this.curDarkMode,
+    required this.remoteServer,
+    required this.switchDarkMode,
+    required this.filepicker,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -71,22 +74,25 @@ class SettingsScreen extends HookConsumerWidget {
                 SettingsSection(
                   title: Text('General Setting'),
                   tiles: [
-                    SettingsTile(
-                      title: Text('Remote Server'),
-                      value: Text('None'),
-                    ),
-                    SettingsTile(
-                      title: Text('Algorithm In Use'),
-                      value: Text('FSRS'),
-                    ),
-                    SettingsTile(
-                      title: Text('FSRS'),
-                      value: Text(
-                          'This is the FSRS algorithm currently in use by Anki'),
+                    ...?remoteSettings?.remoteAlgorithms?.map(
+                      (e) => SettingsTile(
+                        title: Text(e.algorithmName),
+                      ),
                     ),
                     SettingsTile(
                       title: Text('Add Algorithm'),
                       trailing: Icon(Icons.add),
+                      onPressed: (context) async {
+                        final needsRefresh = await showDialog(
+                          context: context,
+                          builder: (context) => AddAlgorithm(
+                              remoteServer: remoteServer,
+                              filepicker: filepicker),
+                        );
+                        if (context.mounted && needsRefresh == true) {
+                          refresh(stillWaitingForRemoteServer, ref, context);
+                        }
+                      },
                     )
                   ],
                 ),

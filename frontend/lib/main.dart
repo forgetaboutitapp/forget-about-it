@@ -1,7 +1,9 @@
 import 'package:app/data/constants.dart';
 import 'package:app/interop/get_url.dart';
+import 'package:app/network/interfaces.dart';
 import 'package:app/screens/bulk-edit/view.dart';
 import 'package:app/screens/quiz/view.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/adapters.dart';
@@ -69,6 +71,7 @@ class MainApp extends HookConsumerWidget {
       GoRoute(
         path: SettingsScreen.location,
         builder: (context, state) => SettingsScreen(
+          filepicker: RealFilepicker(),
           remoteServer: _getRemoteServer(),
           curDarkMode: Hive.box(localSettingsHiveBox)
               .get(localSettingsHiveDarkTheme, defaultValue: false),
@@ -106,4 +109,12 @@ class MainApp extends HookConsumerWidget {
           );
         });
   }
+}
+
+class RealFilepicker extends GenericFilepicker {
+  @override
+  Future<FilePickerResult?> pickFile(
+          {required FileType type, required List<String> allowedExtensions}) =>
+      FilePicker.platform
+          .pickFiles(type: type, allowedExtensions: allowedExtensions);
 }

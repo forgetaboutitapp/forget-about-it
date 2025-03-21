@@ -53,10 +53,38 @@ INSERT INTO questions_logs (question_id, result, timestamp) VALUES (?, ?, ?);
 SELECT questions_logs.question_id, result, timestamp FROM questions_logs JOIN questions ON questions.question_id = questions_logs.question_id WHERE questions.user_id=?;
 
 -- name: AddSpacingAlgorithm :exec
-INSERT INTO spacing_algorithms(algorithm_id, timestamp_added, initialization_functions, allocating_function, freeing_function, algorithm, author_name, author, remote_url, license, module_name, download_url, version) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?);
+INSERT INTO spacing_algorithms( algorithm_id,
+    alloc,
+    api_version,
+    author,
+    dealloc,
+    desc,
+    download_url,
+    init,
+    license,
+    module_name,
+    algorithm_name,
+    remote_url,
+    version,
+    timestamp,
+    wasm) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
 
 -- name: GetSpacingAlgorithms :many
-SELECT algorithm_id, timestamp_added, initialization_functions, allocating_function, freeing_function, algorithm, author_name, author, remote_url, license, module_name FROM spacing_algorithms;
+SELECT algorithm_id, 
+    alloc,
+    api_version,
+    author,
+    dealloc,
+    desc,
+    download_url,
+    init,
+    license,
+    module_name,
+    algorithm_name,
+    remote_url,
+    version,
+    timestamp,
+    wasm FROM spacing_algorithms;
 
 -- name: GetDefaultAlgorithm :one
 SELECT default_algorithm from Users WHERE user_id = ?;

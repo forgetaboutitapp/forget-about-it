@@ -32,6 +32,7 @@ func main() {
 	http.DefaultServeMux.Handle("/api/v0/secure/get-all-tags", secure.Server{Db: q, Next: secure.GetAllTags, OrigDB: db})
 	http.DefaultServeMux.Handle("/api/v0/secure/grade-question", secure.Server{Db: q, Next: secure.GradeQuestion, OrigDB: db})
 	http.DefaultServeMux.Handle("/api/v0/secure/get-next-question", secure.Server{Db: q, Next: secure.GetNextQuestion, OrigDB: db})
+	http.DefaultServeMux.Handle("/api/v0/secure/upload-algorithm", secure.Server{Db: q, Next: secure.UploadAlgorithm, OrigDB: db})
 
 	fmt.Println("Starting server")
 	corsOptions := cors.Options{

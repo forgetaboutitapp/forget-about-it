@@ -24,18 +24,20 @@ CREATE TABLE questions_logs(
 
 CREATE TABLE spacing_algorithms(
     algorithm_id INTEGER PRIMARY KEY,
-    author_name TEXT NOT NULL,
-    author TEXT NOT NULL,
-    license TEXT NOT NULL,
-    remote_url TEXT NOT NULL,
-    download_url TEXT NOT NULL,
-    timestamp_added INTEGER NOT NULL,
-    initialization_functions TEXT NOT NULL,
-    allocating_function TEXT NOT NULL,
-    freeing_function TEXT NOT NULL,
-    algorithm BLOB NOT NULL,
-    module_name TEXT NOT NULL,
-    version INT NOT NULL
-    );
+    alloc text not null,
+    api_version integer not null,
+    author text not null,
+    dealloc text not null,
+    desc text,
+    download_url text not null,
+    init text not null,
+    license text not null,
+    module_name text not null,
+    algorithm_name text not null,
+    remote_url text not null,
+    version integer not null,
+    timestamp integer not null,
+    wasm blob not null
+);
 
 ALTER TABLE Users ADD default_algorithm INTEGER REFERENCES spacing_algorithms(algorithm_id);

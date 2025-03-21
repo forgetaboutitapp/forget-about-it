@@ -165,7 +165,6 @@ class RemoteServer implements FetchData {
   @override
   Future<String> getNextQuestion(ISet<String> tags) async {
     try {
-      // TODO: Make this a get and pass tags as a query string
       final nextQuestion = await client.post(
         Uri.parse('$remoteHost/api/v0/secure/get-next-question'),
         headers: {
@@ -193,6 +192,25 @@ class RemoteServer implements FetchData {
           'Authorization': 'Bearer $token',
         },
         body: jsonEncode({'question-id': questionID, 'correct': correct}),
+      );
+      if (nextQuestion.statusCode != 200) {
+        throw ServerException(code: nextQuestion.statusCode);
+      }
+    } on http.ClientException catch (_) {
+      throw ServerException(code: -1);
+    }
+  }
+
+  @override
+  Future<void> uploadAlgorithm(String data) async {
+    try {
+      final nextQuestion = await client.post(
+        Uri.parse('$remoteHost/api/v0/secure/upload-algorithm'),
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'data': data}),
       );
       if (nextQuestion.statusCode != 200) {
         throw ServerException(code: nextQuestion.statusCode);

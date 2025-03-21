@@ -6,13 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"strings"
-	"time"
 
 	"github.com/forgetaboutitapp/forget-about-it/server"
 	"github.com/forgetaboutitapp/forget-about-it/server/pkg/sql_queries"
 	"github.com/hashicorp/go-set"
-	"github.com/tetratelabs/wazero"
 )
 
 var ErrCantGetDefaultAlgo = errors.New("can't get default algo")
@@ -28,6 +25,7 @@ var ErrCantAllocate = errors.New("can't allocate")
 var ErrCantFree = errors.New("can't free")
 var ErrCantCallNextCard = errors.New("can't call next card")
 var ErrCantReadBytes = errors.New("can't read bytes")
+var ErrCantRunWasm = errors.New("can't run wasm")
 
 func GetNextQuestion(ctx context.Context, userid int64, s Server, m map[string]any) (map[string]any, error) {
 	slog.Info("Getting next question")
@@ -43,7 +41,7 @@ func GetNextQuestion(ctx context.Context, userid int64, s Server, m map[string]a
 		slog.Error("can't get default algo", "uuid", userid, "err", err)
 		return nil, errors.Join(ErrCantGetDefaultAlgo, err)
 	}
-	algos, err := func() ([]sql_queries.GetSpacingAlgorithmsRow, error) {
+	algos, err := func() ([]sql_queries.SpacingAlgorithm, error) {
 		server.DbLock.RLock()
 		defer server.DbLock.RUnlock()
 		a, b := s.Db.GetSpacingAlgorithms(ctx)
@@ -54,7 +52,7 @@ func GetNextQuestion(ctx context.Context, userid int64, s Server, m map[string]a
 		return nil, errors.Join(ErrCantGetSpacingAlgo, err)
 
 	}
-	var algo sql_queries.GetSpacingAlgorithmsRow
+	var algo sql_queries.SpacingAlgorithm
 	if defaultAlgo.Valid {
 
 		for _, curAlgo := range algos {
@@ -69,30 +67,6 @@ func GetNextQuestion(ctx context.Context, userid int64, s Server, m map[string]a
 		panic("There are no algorithms available")
 	}
 
-	runtime := wazero.NewRuntime(ctx)
-
-	defer runtime.Close(ctx) // This closes everything this Runtime created.
-	_, err = runtime.NewHostModuleBuilder(algo.ModuleName).
-		Instantiate(ctx)
-	if err != nil {
-		slog.Error("can't make a new module builder", "algo", algo.AlgorithmID, "err", err)
-		return nil, errors.Join(ErrCantGetNewModBuilder, err)
-	}
-	initializationFunctions := strings.Split(algo.InitializationFunctions, ",")
-	modConfig := wazero.NewModuleConfig().WithStartFunctions()
-	if len(initializationFunctions) != 0 {
-		modConfig = modConfig.WithStartFunctions(initializationFunctions...)
-	}
-	mod, err := runtime.InstantiateWithConfig(ctx, algo.Algorithm, modConfig)
-	if err != nil {
-		slog.Error("can't instantiate", "algo", algo.AlgorithmID, "modConfig", modConfig, "err", err)
-		return nil, errors.Join(ErrCantInstantiate, err)
-	}
-	addCard := mod.ExportedFunction("add-card")
-	gradeCard := mod.ExportedFunction("grade-card")
-	getCard := mod.ExportedFunction("get-cards")
-	malloc := mod.ExportedFunction("alloc")
-	free := mod.ExportedFunction("dealloc")
 	allGrades, err := func() ([]sql_queries.QuestionsLog, error) {
 		server.DbLock.RLock()
 		defer server.DbLock.RUnlock()
@@ -162,74 +136,41 @@ func GetNextQuestion(ctx context.Context, userid int64, s Server, m map[string]a
 		}
 	}
 
-	for _, question := range allQuestionsWithRightTags {
-		_, err = addCard.Call(ctx, uint64(question.QuestionID))
-		if err != nil {
-			slog.Error("Unable to call add-card function", "algo", algo.AlgorithmID, "err", err)
-			return nil, errors.Join(ErrCantGetAddCard, err)
-		}
-	}
-	for _, grades := range allGradesWithRightTags {
-		_, err := gradeCard.Call(ctx, uint64(grades.QuestionID), uint64(grades.Timestamp), uint64(grades.Result))
-		if err != nil {
-			slog.Error("Unable to call grade-card function", "algo", algo.AlgorithmID, "err", err)
-			return nil, errors.Join(ErrCantGetGradeCard, err)
-		}
-	}
-	addr, err := malloc.Call(ctx, 24)
+	ret, err := runAlgorithm(ctx, AlgorithmStruct{
+		Alloc:         algo.Alloc,
+		ApiVersion:    int(algo.ApiVersion),
+		Author:        algo.Author,
+		Dealloc:       algo.Dealloc,
+		Desc:          algo.Desc.String,
+		DownloadUrl:   algo.DownloadUrl,
+		Init:          algo.Init,
+		License:       algo.License,
+		ModuleName:    algo.ModuleName,
+		AlgorithmName: algo.AlgorithmName,
+		RemoteURL:     algo.RemoteUrl,
+		Version:       int(algo.Version),
+		WasmBytes:     algo.Wasm,
+	}, allQuestionsWithRightTags, allGradesWithRightTags)
 	if err != nil {
-		slog.Error("Unable to allocate", "algo", algo.AlgorithmID, "err", err)
-		return nil, errors.Join(ErrCantAllocate, err)
-	}
-	_, err = getCard.Call(ctx, addr[0], uint64(time.Now().Unix()))
-	if err != nil {
-		slog.Error("Unable to get next card", "algo", algo.AlgorithmID, "err", err)
-		return nil, errors.Join(ErrCantCallNextCard, err)
-	}
-
-	lenDueCards, inRange := mod.Memory().ReadUint32Le(uint32(addr[0]))
-	if !inRange {
-		slog.Error("Cannot read 4 bytes in getting amount of due cards", "algo", algo.AlgorithmID)
-		return nil, ErrCantReadBytes
-	}
-
-	lenNonDueCards, inRange := mod.Memory().ReadUint32Le(uint32(addr[0] + 4))
-	if !inRange {
-		slog.Error("Cannot read 4 bytes in getting amount of non due cards", "algo", algo.AlgorithmID)
-		return nil, ErrCantReadBytes
-	}
-
-	lenNewCards, inRange := mod.Memory().ReadUint32Le(uint32(addr[0] + 8))
-	if !inRange {
-		slog.Error("Cannot read 4 bytes in getting amount of new cards", "algo", algo.AlgorithmID)
-		return nil, ErrCantReadBytes
-	}
-	nextCard, inRange := mod.Memory().ReadUint64Le(uint32(addr[0] + 16))
-	if !inRange {
-		slog.Error("Cannot read 8 bytes in getting due card", "algo", algo.AlgorithmID)
-		return nil, ErrCantReadBytes
-	}
-
-	_, err = free.Call(ctx, addr[0])
-	if err != nil {
-		slog.Error("Cannot call free", "algo", algo.AlgorithmID, "err", err)
-		return nil, ErrCantReadBytes
+		slog.Error("cannot run wasm", "algoname", algo.AlgorithmName, "err", err)
+		return nil, errors.Join(err, ErrCantRunWasm)
 	}
 	question := ""
 	answer := ""
 	found := false
 	for _, questionGot := range allQuestions {
-		if questionGot.QuestionID == int64(nextCard) {
+		if questionGot.QuestionID == int64(ret.nextCard) {
 			question = questionGot.Question
 			answer = questionGot.Answer
 			found = true
 		}
 	}
 	if !found {
-		slog.Error("Cannot find question id", "nextCard", nextCard)
+		slog.Error("Cannot find question id", "nextCard", ret.nextCard)
 		return nil, ErrCanGetQuestions
 
 	}
-	resultMap := map[string]any{"amount-due-cards": lenDueCards, "amount-new-cards": lenNewCards, "amount-non-due-cards": lenNonDueCards, "id": nextCard, "question": question, "answer": answer}
+
+	resultMap := map[string]any{"amount-due-cards": ret.lenDueCards, "amount-new-cards": ret.lenNewCards, "amount-non-due-cards": ret.lenNonDueCards, "id": ret.nextCard, "question": question, "answer": answer, "card-type": ret.typeOfNextCard}
 	return resultMap, nil
 }

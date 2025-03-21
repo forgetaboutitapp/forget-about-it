@@ -59,4 +59,4 @@ server/web
 
 algorithms-built/*
 
-/frontend/android/app/.cxx
+**/*.exe
