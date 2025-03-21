@@ -2,6 +2,7 @@ package secure_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -87,10 +88,15 @@ func TestAddAndThenUpdateQuestionsWithoutID(t *testing.T) {
 	}
 }
 
-func ToAny[A any](m map[string]A) map[string]any {
-	m1 := map[string]any{}
-	for k, v := range m {
-		m1[k] = v
+func ToAny(m any) map[string]any {
+	str, err := json.Marshal(m)
+	if err != nil {
+		panic(err)
 	}
-	return m1
+	var g map[string]any
+	err = json.Unmarshal(str, &g)
+	if err != nil {
+		panic(err)
+	}
+	return g
 }

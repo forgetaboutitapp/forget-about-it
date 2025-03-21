@@ -18,8 +18,9 @@ const String _originalText =
 
 Future<String> getAllQuestions({required FetchData remoteServer}) async {
   final List<dynamic> dynamicFlashcards = jsonDecode(
-    await remoteServer.getAllQuestions(),
-  );
+        await remoteServer.getAllQuestions(),
+      )['flashcards'] ??
+      [];
 
   final flashcards =
       dynamicFlashcards.map((e) => Flashcard.fromJson(e)).toIList();

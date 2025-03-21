@@ -35,7 +35,26 @@ var ErrCantDeleteTag = errors.New("can't delete tag")
 var ErrCantCommit = errors.New("can't commit")
 
 func PostAllQuestions(ctx context.Context, userid int64, s Server, m map[string]any) (map[string]any, error) {
-	data := m["flashcards"].([]Flashcard)
+	dataF := m["flashcards"].([]any)
+	data := []Flashcard{}
+	for _,v := range dataF {
+		slog.Info("v:", "v",v)
+		vAsMap := v.(map[string]any)
+		var id int64 = 0
+		if vAsMap["id"] != nil {
+		id = int64(vAsMap["id"].(float64))
+		}
+		tags := []string{}
+		for _, t:= range vAsMap["tags"].([]any) {
+			tags = append(tags, t.(string))
+		}
+		data = append(data, Flashcard{
+			Id: id,
+			Question: vAsMap["question"].(string),
+			Answer: vAsMap["answer"].(string),
+			Tags: tags,
+		})
+	}
 	slog.Info("got questions list", "data", data)
 	err := func() error {
 		server.DbLock.Lock()

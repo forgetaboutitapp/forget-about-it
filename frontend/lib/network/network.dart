@@ -43,7 +43,8 @@ class RemoteServer implements FetchData {
           'Cache-Control': 'no-cache',
           'Authorization': 'Bearer $token'
         },
-        body: jsonEncode(flashcards.map((e) => e.toJson()).toList()),
+        body: jsonEncode(
+            {'flashcards': flashcards.map((e) => e.toJson()).toList()}),
       );
       if (res.statusCode != 200) {
         throw ServerException(code: res.statusCode);
