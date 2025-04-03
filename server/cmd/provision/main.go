@@ -4,12 +4,15 @@ import (
 	"context"
 	"crypto/rand"
 	"errors"
+	"flag"
 	"fmt"
 	"log/slog"
 	"math"
 	"math/big"
+	"path/filepath"
 	"time"
 
+	"github.com/adrg/xdg"
 	"github.com/forgetaboutitapp/forget-about-it/server"
 	dbUtils "github.com/forgetaboutitapp/forget-about-it/server/pkg/db_utils"
 	"github.com/forgetaboutitapp/forget-about-it/server/pkg/sql_queries"
@@ -22,6 +25,9 @@ var ErrUserGeneration = errors.New("user generation error")
 var ErrMnemonicGeneration = errors.New("mnemonic generation error")
 
 func main() {
+	dbLocation := flag.String("location", filepath.Join(xdg.StateHome, "forget-about-it.sqlite3"), "sqlite3 file location")
+	flag.Parse()
+	server.DBFilename = *dbLocation
 	fmt.Println(server.DBFilename)
 	db, err := dbUtils.OpenDatabase(context.Background())
 	if err != nil {

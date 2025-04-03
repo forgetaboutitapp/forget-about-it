@@ -172,7 +172,7 @@ class RemoteServer implements FetchData {
           'Cache-Control': 'no-cache',
           'Authorization': 'Bearer $token',
         },
-        body: jsonEncode(tags.toList()),
+        body: jsonEncode({'tags': tags.toList()}),
       );
       if (nextQuestion.statusCode != 200) {
         throw ServerException(code: nextQuestion.statusCode);

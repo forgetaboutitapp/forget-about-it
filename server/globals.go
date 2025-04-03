@@ -2,10 +2,7 @@ package server
 
 import (
 	"embed"
-	"path/filepath"
 	"sync"
-
-	"github.com/adrg/xdg"
 )
 
 //go:embed sql/migrations/*
@@ -14,7 +11,7 @@ var DDL embed.FS
 //go:embed web/*
 var Files embed.FS
 
-var DBFilename = filepath.Join(xdg.StateHome, "forget-about-it.sqlite3")
+var DBFilename = ""
 
 var MutexUsersWaiting sync.Mutex
 var UsersWaiting map[int64]struct{} = make(map[int64]struct{})

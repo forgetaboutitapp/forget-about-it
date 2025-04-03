@@ -51,12 +51,18 @@ class QuizView extends HookConsumerWidget {
             ),
           QuizQuestionStateError(:final exception) =>
             ErrorScreen(exception: exception),
-          QuizQuestionStateData(:final question, :final answer, :final id) =>
+          QuizQuestionStateData(
+            :final question,
+            :final answer,
+            :final id,
+            :final questionType
+          ) =>
             DisplayQuestion(
               remoteServer: remoteServer,
               question: question,
               answer: answer,
               id: id,
+              questionType: questionType,
               tagsSet: tagsSet,
             ),
         },
@@ -95,6 +101,7 @@ class DisplayQuestion extends HookConsumerWidget {
   final int id;
   final ISet<String>? tagsSet;
   final FetchData remoteServer;
+  final QuestionType questionType;
   const DisplayQuestion({
     super.key,
     required this.question,
@@ -102,84 +109,97 @@ class DisplayQuestion extends HookConsumerWidget {
     required this.id,
     required this.tagsSet,
     required this.remoteServer,
+    required this.questionType,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final shouldShowQuestion = useState(true);
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Expanded(
-          child: Center(
-            child: shouldShowQuestion.value
-                ? Markdown(
-                    data: question,
-                    selectable: true,
-                  )
-                : Markdown(
-                    data: answer,
-                    selectable: true,
-                  ),
+    return Padding(
+      padding: const EdgeInsets.all(1.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Center(
+            child: Text(
+              switch (questionType) {
+                QuestionType.dueQuestion => 'Due Question',
+                QuestionType.nonDueQuestion => 'Review Non Due Question',
+                QuestionType.newQuestion => 'New Question',
+              },
+            ),
           ),
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: shouldShowQuestion.value
-              ? [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        shouldShowQuestion.value = false;
-                      },
-                      child: Text('Check'),
+          Expanded(
+            child: Center(
+              child: shouldShowQuestion.value
+                  ? Markdown(
+                      data: question,
+                      selectable: true,
+                    )
+                  : Markdown(
+                      data: answer,
+                      selectable: true,
                     ),
-                  )
-                ]
-              : [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        try {
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: shouldShowQuestion.value
+                ? [
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          shouldShowQuestion.value = false;
+                        },
+                        child: Text('Check'),
+                      ),
+                    )
+                  ]
+                : [
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          try {
+                            ref
+                                .read(quizQuestionsProvider.notifier)
+                                .gradeQuestion(remoteServer, tagsSet, id, true);
+                          } on ServerException catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  backgroundColor: Colors.red,
+                                  content: Text('$e'),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        style: ButtonStyle(
+                          backgroundColor: WidgetStatePropertyAll(Colors.green),
+                        ),
+                        child: Text('Correct'),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: ElevatedButton(
+                        onPressed: () {
                           ref
                               .read(quizQuestionsProvider.notifier)
-                              .gradeQuestion(remoteServer, tagsSet, id, true);
-                        } on ServerException catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                backgroundColor: Colors.red,
-                                content: Text('$e'),
-                              ),
-                            );
-                          }
-                        }
-                      },
-                      style: ButtonStyle(
-                        backgroundColor: WidgetStatePropertyAll(Colors.green),
+                              .gradeQuestion(remoteServer, tagsSet, id, false);
+                        },
+                        style: ButtonStyle(
+                          backgroundColor: WidgetStatePropertyAll(Colors.red),
+                        ),
+                        child: Text('Incorrect'),
                       ),
-                      child: Text('Correct'),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        ref
-                            .read(quizQuestionsProvider.notifier)
-                            .gradeQuestion(remoteServer, tagsSet, id, false);
-                      },
-                      style: ButtonStyle(
-                        backgroundColor: WidgetStatePropertyAll(Colors.red),
-                      ),
-                      child: Text('Incorrect'),
-                    ),
-                  )
-                ],
-        ),
-      ],
+                    )
+                  ],
+          ),
+        ],
+      ),
     );
   }
 }

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -64,6 +66,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	v := sha256.Sum256(conts)
+	fmt.Println(hex.EncodeToString(v[:]))
+
 	wasmEncoded := base64.StdEncoding.EncodeToString(conts)
 
 	data, err := json.Marshal(map[string]any{
@@ -77,7 +82,7 @@ func main() {
 		"alloc":        *allocatingFunction,
 		"dealloc":      *freeingFunction,
 		"wasm":         wasmEncoded,
-		"module-name":   *moduleName,
+		"module-name":  *moduleName,
 		"version":      *version,
 		"api-version":  *apiVersion,
 	})

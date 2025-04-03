@@ -37,22 +37,22 @@ var ErrCantCommit = errors.New("can't commit")
 func PostAllQuestions(ctx context.Context, userid int64, s Server, m map[string]any) (map[string]any, error) {
 	dataF := m["flashcards"].([]any)
 	data := []Flashcard{}
-	for _,v := range dataF {
-		slog.Info("v:", "v",v)
+	for _, v := range dataF {
+		slog.Info("v:", "v", v)
 		vAsMap := v.(map[string]any)
 		var id int64 = 0
 		if vAsMap["id"] != nil {
-		id = int64(vAsMap["id"].(float64))
+			id = int64(vAsMap["id"].(float64))
 		}
 		tags := []string{}
-		for _, t:= range vAsMap["tags"].([]any) {
+		for _, t := range vAsMap["tags"].([]any) {
 			tags = append(tags, t.(string))
 		}
 		data = append(data, Flashcard{
-			Id: id,
+			Id:       id,
 			Question: vAsMap["question"].(string),
-			Answer: vAsMap["answer"].(string),
-			Tags: tags,
+			Answer:   vAsMap["answer"].(string),
+			Tags:     tags,
 		})
 	}
 	slog.Info("got questions list", "data", data)

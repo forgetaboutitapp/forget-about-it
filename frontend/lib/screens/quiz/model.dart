@@ -9,6 +9,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'model.g.dart';
 part 'model.freezed.dart';
 
+enum QuestionType { dueQuestion, nonDueQuestion, newQuestion }
+
 @freezed
 sealed class QuizQuestionState with _$QuizQuestionState {
   factory QuizQuestionState.waiting() = QuizQuestionStateWaiting;
@@ -19,13 +21,22 @@ sealed class QuizQuestionState with _$QuizQuestionState {
     required int id,
     required String question,
     required String answer,
+    required QuestionType questionType,
   }) = QuizQuestionStateData;
 }
 
 QuizQuestionStateData _quizQuestionStateDatafromJson(
         Map<String, dynamic> data) =>
     QuizQuestionStateData(
-        id: data['id'], question: data['question'], answer: data['answer']);
+        id: data['id'],
+        question: data['question'],
+        answer: data['answer'],
+        questionType: switch (data['card-type'].toString()) {
+          'new-card' => QuestionType.newQuestion,
+          'due-card' => QuestionType.dueQuestion,
+          'non-due-card' => QuestionType.nonDueQuestion,
+          _ => throw Exception('No card type defined as ${data['card-type']}')
+        });
 
 @riverpod
 class QuizQuestions extends _$QuizQuestions {

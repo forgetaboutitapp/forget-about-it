@@ -19,22 +19,19 @@ func GradeQuestion(ctx context.Context, userid int64, s Server, m map[string]any
 
 	questionId, correctType := m["question-id"].(float64)
 	if !correctType {
-		slog.Error("map is invalid type", "question-id", m["question-id"])
+		slog.Error("map is invalid type", "question-id", m["question-id"], "m", m)
 		return nil, ErrMapIsInvalidType
 	}
-	correct, correctType := (m["is-correct"]).(float64)
+	correct, correctType := (m["correct"]).(bool)
 	if !correctType {
-		slog.Error("map is invalid type", "is-correct", m["is-correct"])
+		slog.Error("map is invalid type", "correct", m["correct"], "m", m)
 		return nil, ErrMapIsInvalidType
 	}
 	result := 0
-	if correct == 0 {
-		result = 0
-	} else if correct == 1 {
+	if correct {
 		result = 1
 	} else {
-		slog.Error("is-correct val is invalid")
-		return nil, ErrCorrectValIsNotBoolean
+		result = 0
 	}
 	err := func() error {
 		server.DbLock.Lock()
@@ -42,14 +39,14 @@ func GradeQuestion(ctx context.Context, userid int64, s Server, m map[string]any
 		return s.Db.GradeQuestion(ctx, sql_queries.GradeQuestionParams{
 			QuestionID: int64(questionId),
 			Result:     int64(result),
-			Timestamp:  time.Now().UnixMicro(),
+			Timestamp:  time.Now().Unix(),
 		})
 	}()
 	if err != nil {
 		slog.Error("unable to save grades to the database", "params", sql_queries.GradeQuestionParams{
 			QuestionID: int64(questionId),
 			Result:     int64(result),
-			Timestamp:  time.Now().UnixMicro(),
+			Timestamp:  time.Now().Unix(),
 		}, "err", err)
 		return nil, errors.Join(ErrCantSaveGrades, err)
 	}

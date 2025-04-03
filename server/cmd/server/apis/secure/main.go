@@ -77,7 +77,7 @@ func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if len(body) != 0 {
 		err = json.Unmarshal(body, &m)
 		if err != nil {
-			slog.Error("Unable to unmarsal body", "body", body, "err", err)
+			slog.Error("Unable to unmarshal body", "body", body, "uri", r.RequestURI, "err", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}

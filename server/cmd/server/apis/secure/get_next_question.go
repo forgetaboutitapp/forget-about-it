@@ -29,8 +29,12 @@ var ErrCantRunWasm = errors.New("can't run wasm")
 
 func GetNextQuestion(ctx context.Context, userid int64, s Server, m map[string]any) (map[string]any, error) {
 	slog.Info("Getting next question")
-	tagsSent := m["tag-sent"].([]string)
-	tagsSentSet := set.From(tagsSent)
+	tagsSentAsAny := m["tags"].([]any)
+	tagsSentAsString := []string{}
+	for _, v := range tagsSentAsAny {
+		tagsSentAsString = append(tagsSentAsString, v.(string))
+	}
+	tagsSentSet := set.From(tagsSentAsString)
 	defaultAlgo, err := func() (sql.NullInt64, error) {
 		server.DbLock.RLock()
 		defer server.DbLock.RUnlock()
@@ -166,7 +170,7 @@ func GetNextQuestion(ctx context.Context, userid int64, s Server, m map[string]a
 		}
 	}
 	if !found {
-		slog.Error("Cannot find question id", "nextCard", ret.nextCard)
+		slog.Error("Cannot find question id", "nextCard", ret)
 		return nil, ErrCanGetQuestions
 
 	}

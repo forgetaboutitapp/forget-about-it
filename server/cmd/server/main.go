@@ -1,11 +1,14 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io/fs"
 	"log"
 	"net/http"
+	"path/filepath"
 
+	"github.com/adrg/xdg"
 	"github.com/forgetaboutitapp/forget-about-it/server"
 	"github.com/forgetaboutitapp/forget-about-it/server/cmd/server/apis/login"
 	"github.com/forgetaboutitapp/forget-about-it/server/cmd/server/apis/secure"
@@ -14,6 +17,10 @@ import (
 )
 
 func main() {
+	dbLocation := flag.String("location", filepath.Join(xdg.StateHome, "forget-about-it.sqlite3"), "sqlite3 file location")
+	port := flag.Int("port", 8080, "port to host")
+	flag.Parse()
+	server.DBFilename = *dbLocation
 	q, db := dbUtils.GetDB()
 	realSub, err := fs.Sub(server.Files, "web")
 	if err != nil {
@@ -33,13 +40,13 @@ func main() {
 	http.DefaultServeMux.Handle("/api/v0/secure/grade-question", secure.Server{Db: q, Next: secure.GradeQuestion, OrigDB: db})
 	http.DefaultServeMux.Handle("/api/v0/secure/get-next-question", secure.Server{Db: q, Next: secure.GetNextQuestion, OrigDB: db})
 	http.DefaultServeMux.Handle("/api/v0/secure/upload-algorithm", secure.Server{Db: q, Next: secure.UploadAlgorithm, OrigDB: db})
-
-	fmt.Println("Starting server")
+	address := fmt.Sprintf(":%d", *port)
+	fmt.Printf("Starting server on address %s\n", address)
 	corsOptions := cors.Options{
 		AllowPrivateNetwork: true,
 		AllowedOrigins:      []string{"*"},
 		AllowedHeaders:      []string{"*"},
 	}
-	log.Fatal(http.ListenAndServe(":8080", cors.New(corsOptions).Handler(http.DefaultServeMux)))
+	log.Fatal(http.ListenAndServe(address, cors.New(corsOptions).Handler(http.DefaultServeMux)))
 
 }
