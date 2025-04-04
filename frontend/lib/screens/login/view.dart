@@ -26,10 +26,10 @@ class LoginScreen extends HookConsumerWidget {
         child: Center(
           child: Padding(
             padding: EdgeInsets.fromLTRB(
-                64,
-                MediaQuery.sizeOf(context).height > 680 ? 64.0 : 4,
-                64,
-                MediaQuery.sizeOf(context).height > 680 ? 64.0 : 4),
+                MediaQuery.sizeOf(context).width > 500 ? 64 : 4,
+                MediaQuery.sizeOf(context).height > 760 ? 64.0 : 4,
+                MediaQuery.sizeOf(context).width > 500 ? 64 : 4,
+                MediaQuery.sizeOf(context).height > 760 ? 64.0 : 4),
             child: SizedBox(
               width: MediaQuery.sizeOf(context).width > 800
                   ? 800
