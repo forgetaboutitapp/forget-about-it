@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app/network/interfaces.dart';
+import 'package:app/screens/general-display/show_error.dart';
 import 'package:app/screens/settings/add_algorithm.dart';
 import 'package:app/screens/settings/models/model.dart';
 import 'package:app/screens/settings/qr_dialog.dart';
@@ -77,6 +78,29 @@ class SettingsScreen extends HookConsumerWidget {
                     ...?remoteSettings?.remoteAlgorithms?.map(
                       (e) => SettingsTile(
                         title: Text(e.algorithmName),
+                        leading: Radio(
+                          value: e.algorithmID,
+                          groupValue: remoteSettings.defaultAlgorithm ?? 0,
+                          onChanged: (int? v) async {
+                            stillWaitingForRemoteServer.value = true;
+                            try {
+                              await remoteServer
+                                  .setDefaultAlgorithm(e.algorithmID);
+                            } on Exception catch (e) {
+                              if (context.mounted) {
+                                showError(context, e.toString());
+                              }
+                            }
+                            if (context.mounted) {
+                              refresh(
+                                  stillWaitingForRemoteServer, ref, context);
+                            }
+                          },
+                        ),
+                        trailing: IconButton(
+                          icon: Icon(Icons.delete),
+                          onPressed: () {},
+                        ),
                       ),
                     ),
                     SettingsTile(
@@ -169,7 +193,9 @@ class SettingsScreen extends HookConsumerWidget {
   void refresh(ValueNotifier<bool> stillWaitingForRemoteServer, WidgetRef ref,
       BuildContext context) {
     () async {
-      stillWaitingForRemoteServer.value = true;
+      if (stillWaitingForRemoteServer.value != true) {
+        stillWaitingForRemoteServer.value = true;
+      }
       final p = await ref
           .read(remoteSettingsNotifierProvider.notifier)
           .getData(remoteServer);

@@ -40,6 +40,8 @@ func main() {
 	http.DefaultServeMux.Handle("/api/v0/secure/grade-question", secure.Server{Db: q, Next: secure.GradeQuestion, OrigDB: db})
 	http.DefaultServeMux.Handle("/api/v0/secure/get-next-question", secure.Server{Db: q, Next: secure.GetNextQuestion, OrigDB: db})
 	http.DefaultServeMux.Handle("/api/v0/secure/upload-algorithm", secure.Server{Db: q, Next: secure.UploadAlgorithm, OrigDB: db})
+	http.DefaultServeMux.Handle("/api/v0/secure/set-default-algorithm", secure.Server{Db: q, Next: secure.SetDefaultAlgorithm, OrigDB: db})
+
 	address := fmt.Sprintf(":%d", *port)
 	fmt.Printf("Starting server on address %s\n", address)
 	corsOptions := cors.Options{

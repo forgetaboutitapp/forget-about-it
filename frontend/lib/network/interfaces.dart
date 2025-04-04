@@ -14,6 +14,7 @@ abstract class FetchData {
   Future<String> getNextQuestion(ISet<String> tags);
   Future<void> gradeQuestion(int questionID, bool correct);
   Future<void> uploadAlgorithm(String data);
+  Future<void> setDefaultAlgorithm(int algorithmID);
 }
 
 abstract class GenericFilepicker {

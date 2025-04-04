@@ -88,3 +88,6 @@ SELECT algorithm_id,
 
 -- name: GetDefaultAlgorithm :one
 SELECT default_algorithm from Users WHERE user_id = ?;
+
+-- name: SetDefaultAlgorithm :exec
+UPDATE users SET default_algorithm=? WHERE user_id=?;

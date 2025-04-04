@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"math/rand/v2"
 	"time"
@@ -34,8 +35,21 @@ func UploadAlgorithm(ctx context.Context, userid int64, s Server, m map[string]a
 		slog.Error("cannot run wasm", "data", algorithm.AlgorithmName, "err", err)
 		return map[string]any{"error": "Unable to run wasm"}, nil
 	}
+	algos, err := s.Db.GetSpacingAlgorithms(ctx)
+	if err != nil {
+		slog.Error("cannot get algos", "err", err)
+		return nil, errors.Join(err, ErrCantGetSpacingAlgo)
+	}
+	id := rand.Int32()
+	tx, err := s.OrigDB.BeginTx(ctx, nil)
+	if err != nil {
+		slog.Error("cannot start transaction", "err", err)
+		return nil, err
+	}
+	defer tx.Rollback()
+	qtx := s.Db.WithTx(tx)
 	params := sql_queries.AddSpacingAlgorithmParams{
-		AlgorithmID:   rand.Int64(),
+		AlgorithmID:   id,
 		Alloc:         algorithm.Alloc,
 		ApiVersion:    int64(algorithm.ApiVersion),
 		Author:        algorithm.Author,
@@ -53,10 +67,22 @@ func UploadAlgorithm(ctx context.Context, userid int64, s Server, m map[string]a
 	}
 	server.DbLock.Lock()
 	defer server.DbLock.Unlock()
-	err = s.Db.AddSpacingAlgorithm(ctx, params)
+	err = qtx.AddSpacingAlgorithm(ctx, params)
 	if err != nil {
 		slog.Error("Cannot save data to the db", "err", err)
 		return map[string]any{"error": "Unable to save to the db"}, nil
+	}
+	if len(algos) == 0 {
+		err = qtx.SetDefaultAlgorithm(ctx, sql_queries.SetDefaultAlgorithmParams{DefaultAlgorithm: sql.NullInt64{Valid: true, Int64: int64(id)}})
+		if err != nil {
+			slog.Error("cannot set default algo", "id", id, "err", err)
+			return nil, errors.Join(err, ErrCantGetSpacingAlgo)
+		}
+	}
+	err = tx.Commit()
+	if err != nil {
+		slog.Error("cannot commit tx", "err", err)
+		return nil, err
 	}
 	return map[string]any{"ok": "ok"}, nil
 }

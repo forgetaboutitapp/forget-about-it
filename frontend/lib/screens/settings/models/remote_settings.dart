@@ -11,11 +11,14 @@ class RemoteSettings with _$RemoteSettings {
   const RemoteSettings({
     required this.remoteDevices,
     required this.remoteAlgorithms,
+    required this.defaultAlgorithm,
   });
   @override
   final IList<RemoteDevice>? remoteDevices;
   @override
   final IList<RemoteAlgorithm>? remoteAlgorithms;
+  @override
+  final int? defaultAlgorithm;
 
   static RemoteSettings fromJSON(dynamic json) {
     final List<RemoteDevice>? remoteDevices = json['settings']
@@ -26,9 +29,15 @@ class RemoteSettings with _$RemoteSettings {
             ?['remote-algorithms']
         ?.map<RemoteAlgorithm>((e) => RemoteAlgorithm.fromJSON(e))
         ?.toList();
+    final iRemoteAlgorithm = remoteAlgorithms?.toIList();
+    final int? def = iRemoteAlgorithm?.firstOrNull?.algorithmID;
+    final sortedRemoteAlgorithm = iRemoteAlgorithm
+        ?.sort((a, b) => a.algorithmID.compareTo(b.algorithmID));
+
     return RemoteSettings(
       remoteDevices: remoteDevices?.toIList(),
-      remoteAlgorithms: remoteAlgorithms?.toIList(),
+      remoteAlgorithms: sortedRemoteAlgorithm?.sort(),
+      defaultAlgorithm: def,
     );
   }
 }

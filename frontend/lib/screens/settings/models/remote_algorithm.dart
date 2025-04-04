@@ -1,4 +1,3 @@
-import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'remote_algorithm.freezed.dart';
@@ -11,14 +10,9 @@ class RemoteAlgorithm with _$RemoteAlgorithm {
     required this.license,
     required this.remoteURL,
     required this.downloadURL,
-    required this.timestampAdded,
-    required this.initializationFunctions,
-    required this.allocatingFunction,
-    required this.freeingFunction,
-    required this.algorithm,
-    required this.moduleName,
     required this.version,
     required this.algorithmName,
+    required this.timeAdded,
   });
   @override
   final int algorithmID;
@@ -31,17 +25,7 @@ class RemoteAlgorithm with _$RemoteAlgorithm {
   @override
   final String downloadURL;
   @override
-  final int timestampAdded;
-  @override
-  final IList<String> initializationFunctions;
-  @override
-  final String allocatingFunction;
-  @override
-  final String freeingFunction;
-  @override
-  final String? algorithm;
-  @override
-  final String moduleName;
+  final String timeAdded;
   @override
   final int version;
   @override
@@ -50,16 +34,11 @@ class RemoteAlgorithm with _$RemoteAlgorithm {
   static RemoteAlgorithm fromJSON(dynamic m) {
     return RemoteAlgorithm(
       algorithmID: m['id'],
-      authorName: m['name'],
+      authorName: m['author-name'],
       license: m['license'],
       remoteURL: m['remote-url'],
       downloadURL: m['download-url'],
-      timestampAdded: m['timestamp-added'],
-      initializationFunctions: m['init-functions'],
-      allocatingFunction: m['allocating-functions'],
-      freeingFunction: m['freeing-functions'],
-      algorithm: m['algorithm'],
-      moduleName: m['module-name'],
+      timeAdded: m['time-added'],
       version: m['version'],
       algorithmName: m['algorithm-name'],
     );

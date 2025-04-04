@@ -220,4 +220,23 @@ class RemoteServer implements FetchData {
       throw ServerException(code: -1);
     }
   }
+
+  @override
+  Future<void> setDefaultAlgorithm(int algorithmID) async {
+    try {
+      final nextQuestion = await client.post(
+        Uri.parse('$remoteHost/api/v0/secure/set-default-algorithm'),
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'algorithm-id': algorithmID}),
+      );
+      if (nextQuestion.statusCode != 200) {
+        throw ServerException(code: nextQuestion.statusCode);
+      }
+    } on http.ClientException catch (_) {
+      throw ServerException(code: -1);
+    }
+  }
 }
