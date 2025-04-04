@@ -51,5 +51,11 @@ func GetAllTags(ctx context.Context, userid int64, s Server, _ map[string]any) (
 	slices.SortFunc(tagSet, func(a, b TagSet) int {
 		return cmp.Compare(a.Tag, b.Tag)
 	})
-	return map[string]any{"tag-set": tagSet}, nil
+	allAlgos, err := s.Db.GetSpacingAlgorithms(ctx)
+	if err != nil {
+		slog.Error("can't get algos", "err", err)
+		return nil, errors.Join(ErrCantGetSpacingAlgo, err)
+	}
+	slog.Info("can run", "len(algos)", len(allAlgos))
+	return map[string]any{"tag-set": tagSet, "can-run": len(allAlgos) > 0}, nil
 }

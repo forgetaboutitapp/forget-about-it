@@ -1,5 +1,6 @@
 import 'package:app/network/interfaces.dart';
 import 'package:app/screens/bulk-edit/view.dart';
+import 'package:app/screens/general-display/show_error.dart';
 import 'package:app/screens/home/model.dart';
 import 'package:app/screens/quiz/view.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
@@ -56,7 +57,8 @@ class HomeScreen extends HookConsumerWidget {
     );
   }
 
-  buildDisplay(BuildContext context, AsyncSnapshot<IList<Tag>> snapshot) {
+  buildDisplay(
+      BuildContext context, AsyncSnapshot<(IList<Tag>, bool)> snapshot) {
     if (snapshot.hasError) {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => ScaffoldMessenger.of(context).showSnackBar(
@@ -71,7 +73,8 @@ class HomeScreen extends HookConsumerWidget {
       return Center(child: Text(''));
     } else if (snapshot.hasData) {
       return TagsView(
-        tagList: snapshot.data!,
+        tagList: snapshot.data!.$1,
+        canRun: snapshot.data!.$2,
         remoteServer: remoteServer,
       );
     } else {
@@ -83,22 +86,27 @@ class HomeScreen extends HookConsumerWidget {
 class TagsView extends HookWidget {
   final FetchData remoteServer;
   final IList<Tag> tagList;
+  final bool canRun;
   const TagsView({
     super.key,
     required this.remoteServer,
+    required this.canRun,
     required this.tagList,
   });
 
   @override
   Widget build(BuildContext context) {
     final tagListResponsive = useState(tagList);
+    final canRunResponsive = useState(canRun);
     final selectedTags = useState(ISet<int>());
     return Column(
       children: [
         Expanded(
           child: RefreshIndicator(
             onRefresh: () async {
-              tagListResponsive.value = await getAllTags(remoteServer);
+              final (tags, canRun) = await getAllTags(remoteServer);
+              tagListResponsive.value = tags;
+              canRunResponsive.value = canRun;
               selectedTags.value = ISet();
             },
             child: ScrollConfiguration(
@@ -141,18 +149,20 @@ class TagsView extends HookWidget {
                 onPressed: selectedTags.value.isEmpty
                     ? null
                     : () {
-                        context.go(
-                          Uri(
-                            path: QuizView.location,
-                            queryParameters: {
-                              'tags': selectedTags.value
-                                  .map(
-                                    (e) => tagList[e].tag,
-                                  )
-                                  .toList()
-                            },
-                          ).toString(),
-                        );
+                        canRunResponsive.value
+                            ? context.go(
+                                Uri(
+                                  path: QuizView.location,
+                                  queryParameters: {
+                                    'tags': selectedTags.value
+                                        .map(
+                                          (e) => tagList[e].tag,
+                                        )
+                                        .toList()
+                                  },
+                                ).toString(),
+                              )
+                            : showError(context, 'You need to add a scheduler');
                       },
                 child: Text('Quiz Me!'),
               ),

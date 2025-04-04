@@ -22,6 +22,9 @@ sealed class QuizQuestionState with _$QuizQuestionState {
     required String question,
     required String answer,
     required QuestionType questionType,
+    required int newCards,
+    required int dueCards,
+    required int nonDueCards,
   }) = QuizQuestionStateData;
 }
 
@@ -31,6 +34,9 @@ QuizQuestionStateData _quizQuestionStateDatafromJson(
         id: data['id'],
         question: data['question'],
         answer: data['answer'],
+        dueCards: data['due-cards'],
+        newCards: data['new-cards'],
+        nonDueCards: data['non-due-cards'],
         questionType: switch (data['card-type'].toString()) {
           'new-card' => QuestionType.newQuestion,
           'due-card' => QuestionType.dueQuestion,
@@ -59,7 +65,7 @@ class QuizQuestions extends _$QuizQuestions {
 
       await client.gradeQuestion(questionID, correct);
 
-      getNextQuestion(client, tagsQuery);
+      await getNextQuestion(client, tagsQuery);
     } on ServerException catch (e) {
       _state = QuizQuestionState.error(exception: e);
       ref.invalidateSelf();

@@ -203,9 +203,9 @@ class RemoteServer implements FetchData {
   }
 
   @override
-  Future<void> uploadAlgorithm(String data) async {
+  Future<String?> uploadAlgorithm(String data) async {
     try {
-      final nextQuestion = await client.post(
+      final result = await client.post(
         Uri.parse('$remoteHost/api/v0/secure/upload-algorithm'),
         headers: {
           'Cache-Control': 'no-cache',
@@ -213,9 +213,14 @@ class RemoteServer implements FetchData {
         },
         body: jsonEncode({'data': data}),
       );
-      if (nextQuestion.statusCode != 200) {
-        throw ServerException(code: nextQuestion.statusCode);
+      if (result.statusCode != 200) {
+        throw ServerException(code: result.statusCode);
       }
+      final dynamic res = jsonDecode(result.body);
+      if (res.keys.contains('error')) {
+        return res['error'];
+      }
+      return null;
     } on http.ClientException catch (_) {
       throw ServerException(code: -1);
     }
@@ -235,6 +240,46 @@ class RemoteServer implements FetchData {
       if (nextQuestion.statusCode != 200) {
         throw ServerException(code: nextQuestion.statusCode);
       }
+    } on http.ClientException catch (_) {
+      throw ServerException(code: -1);
+    }
+  }
+
+  @override
+  Future<String?> removeLogin(String loginId) async {
+    try {
+      final ret = await client.post(
+        Uri.parse('$remoteHost/api/v0/secure/remove-login'),
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'login-id': loginId}),
+      );
+      if (ret.statusCode != 200) {
+        throw ServerException(code: ret.statusCode);
+      }
+      return ret.body;
+    } on http.ClientException catch (_) {
+      throw ServerException(code: -1);
+    }
+  }
+
+  @override
+  Future<String?> removeAlgorithm(String algorithmName) async {
+    try {
+      final ret = await client.post(
+        Uri.parse('$remoteHost/api/v0/secure/remove-algorithm'),
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'algorithm-name': algorithmName}),
+      );
+      if (ret.statusCode != 200) {
+        throw ServerException(code: ret.statusCode);
+      }
+      return ret.body;
     } on http.ClientException catch (_) {
       throw ServerException(code: -1);
     }

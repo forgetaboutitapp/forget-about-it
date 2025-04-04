@@ -66,6 +66,8 @@ class MainApp extends HookConsumerWidget {
         builder: (context, state) => QuizView(
           remoteServer: _getRemoteServer(),
           tags: state.uri.queryParametersAll,
+          isDarkMode: Hive.box(localSettingsHiveBox)
+              .get(localSettingsHiveDarkTheme, defaultValue: false),
         ),
       ),
       GoRoute(

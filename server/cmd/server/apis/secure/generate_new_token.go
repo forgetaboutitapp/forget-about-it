@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"math/rand"
 	"strings"
 	"time"
 
@@ -31,6 +32,7 @@ func GenerateNewToken(ctx context.Context, userid int64, s Server, _ map[string]
 		UserID:            userid,
 		DeviceDescription: "",
 		Created:           time.Now().Unix(),
+		IndexID:           int64(rand.Uint32()),
 	}
 
 	err = func() error {

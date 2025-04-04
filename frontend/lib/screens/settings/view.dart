@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:app/network/interfaces.dart';
 import 'package:app/screens/general-display/show_error.dart';
 import 'package:app/screens/settings/add_algorithm.dart';
 import 'package:app/screens/settings/models/model.dart';
 import 'package:app/screens/settings/qr_dialog.dart';
+import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_settings_ui/flutter_settings_ui.dart';
@@ -78,6 +80,8 @@ class SettingsScreen extends HookConsumerWidget {
                     ...?remoteSettings?.remoteAlgorithms?.map(
                       (e) => SettingsTile(
                         title: Text(e.algorithmName),
+                        description: Text(
+                            'Author: ${e.authorName}\nLicense: ${e.license}\nVersion: ${e.version}\nAdded: ${e.timeAdded}'),
                         leading: Radio(
                           value: e.algorithmID,
                           groupValue: remoteSettings.defaultAlgorithm ?? 0,
@@ -99,7 +103,31 @@ class SettingsScreen extends HookConsumerWidget {
                         ),
                         trailing: IconButton(
                           icon: Icon(Icons.delete),
-                          onPressed: () {},
+                          onPressed:
+                              remoteSettings.defaultAlgorithm == e.algorithmID
+                                  ? null
+                                  : () async {
+                                      try {
+                                        final res = await remoteServer
+                                            .removeAlgorithm(e.algorithmName);
+                                        if (res != null && res != '') {
+                                          final resJson = jsonDecode(res);
+                                          resJson.keys.contains('err');
+                                          if (context.mounted) {
+                                            showError(context,
+                                                'Error: ${resJson['err']}');
+                                          }
+                                        }
+                                        if (context.mounted) {
+                                          refresh(stillWaitingForRemoteServer,
+                                              ref, context);
+                                        }
+                                      } on Exception catch (e) {
+                                        if (context.mounted) {
+                                          showError(context, e.toString());
+                                        }
+                                      }
+                                    },
                         ),
                       ),
                     ),
@@ -110,6 +138,9 @@ class SettingsScreen extends HookConsumerWidget {
                         final needsRefresh = await showDialog(
                           context: context,
                           builder: (context) => AddAlgorithm(
+                              algos: remoteSettings?.remoteAlgorithms
+                                  ?.toSet()
+                                  .toISet(),
                               remoteServer: remoteServer,
                               filepicker: filepicker),
                         );
@@ -132,8 +163,10 @@ class SettingsScreen extends HookConsumerWidget {
                     : SettingsSection(
                         title: Text('Other Devices'),
                         tiles: [
-                          ...?remoteSettings.remoteDevices?.map(
-                            (e) {
+                          ...?remoteSettings.remoteDevices?.indexed.map(
+                            (tuple) {
+                              final e = tuple.$2;
+                              final i = tuple.$1;
                               final lastUsed = e.lastUsed;
                               return SettingsTile(
                                 title: Text(e.title),
@@ -150,8 +183,34 @@ class SettingsScreen extends HookConsumerWidget {
                                           'Last Used: ${DateFormat.yMd().format(lastUsed)}'),
                                   ],
                                 ),
-                                trailing: Icon(
-                                  Icons.delete,
+                                trailing: IconButton(
+                                  icon: Icon(Icons.delete),
+                                  onPressed: i == 0
+                                      ? null
+                                      : () async {
+                                          try {
+                                            final res = await remoteServer
+                                                .removeLogin(e.loginId);
+                                            if (res != null && res != '') {
+                                              final resJson = jsonDecode(res);
+                                              resJson.keys.contains('err');
+                                              if (context.mounted) {
+                                                showError(context,
+                                                    'Error: ${resJson['err']}');
+                                              }
+                                            }
+                                            if (context.mounted) {
+                                              refresh(
+                                                  stillWaitingForRemoteServer,
+                                                  ref,
+                                                  context);
+                                            }
+                                          } on Exception catch (e) {
+                                            if (context.mounted) {
+                                              showError(context, e.toString());
+                                            }
+                                          }
+                                        },
                                 ),
                               );
                             },

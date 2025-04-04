@@ -99,7 +99,7 @@ func runAlgorithm(ctx context.Context, algo AlgorithmStruct, allQuestions []sql_
 			return AlgoReturn{}, errors.Join(ErrCantGetGradeCard, err)
 		}
 	}
-	addr, err := malloc.Call(ctx, 21)
+	addr, err := malloc.Call(ctx, 22)
 	if err != nil {
 		slog.Error("Unable to allocate", "algo", algo.AlgorithmName, "err", err)
 		return AlgoReturn{}, errors.Join(ErrCantAllocate, err)
@@ -118,7 +118,7 @@ func runAlgorithm(ctx context.Context, algo AlgorithmStruct, allQuestions []sql_
 	if readBytes(1, mod.Memory(), p+13)[0] == 1 {
 		isShortTerm = true
 	}
-	nextCard := binary.LittleEndian.Uint64(readBytes(8, mod.Memory(), p+13))
+	nextCard := binary.LittleEndian.Uint64(readBytes(8, mod.Memory(), p+14))
 
 	slog.Info("Next Card", "id", nextCard)
 	_, err = free.Call(ctx, addr[0])

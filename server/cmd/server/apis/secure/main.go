@@ -20,6 +20,12 @@ type Server struct {
 	Next   func(ctx context.Context, token int64, s Server, body map[string]any) (map[string]any, error)
 }
 
+type key int
+
+const (
+	tokenID key = iota
+)
+
 func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	slog.Info("in middleware")
 	token, found := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
@@ -82,7 +88,8 @@ func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	returnMap, err := s.Next(r.Context(), users[0], s, m)
+	ctx := context.WithValue(r.Context(), tokenID, token)
+	returnMap, err := s.Next(ctx, users[0], s, m)
 	if err != nil {
 		slog.Error("Writing server error", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)

@@ -72,19 +72,19 @@ func main() {
 	wasmEncoded := base64.StdEncoding.EncodeToString(conts)
 
 	data, err := json.Marshal(map[string]any{
-		"name":         *algorithmName,
-		"desc":         *algorithmDesc,
-		"author":       *algorithmAuthor,
-		"license":      *algorithmLicense,
-		"remote-url":   *remoteURL,
-		"download-url": *downloadUrl,
-		"init":         *initFunctions,
-		"alloc":        *allocatingFunction,
-		"dealloc":      *freeingFunction,
-		"wasm":         wasmEncoded,
-		"module-name":  *moduleName,
-		"version":      *version,
-		"api-version":  *apiVersion,
+		"algorithm-name": *algorithmName,
+		"desc":           *algorithmDesc,
+		"author":         *algorithmAuthor,
+		"license":        *algorithmLicense,
+		"remote-url":     *remoteURL,
+		"download-url":   *downloadUrl,
+		"init":           *initFunctions,
+		"alloc":          *allocatingFunction,
+		"dealloc":        *freeingFunction,
+		"wasm":           wasmEncoded,
+		"module-name":    *moduleName,
+		"version":        *version,
+		"api-version":    *apiVersion,
 	})
 	if err != nil {
 		panic(err)

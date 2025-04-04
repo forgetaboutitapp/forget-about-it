@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"log/slog"
 
 	"github.com/forgetaboutitapp/forget-about-it/server"
@@ -26,6 +25,7 @@ var ErrCantFree = errors.New("can't free")
 var ErrCantCallNextCard = errors.New("can't call next card")
 var ErrCantReadBytes = errors.New("can't read bytes")
 var ErrCantRunWasm = errors.New("can't run wasm")
+var ErrDefaultAlgoDoesntMatch = errors.New("assertion error: default algo isnt in algo list")
 
 func GetNextQuestion(ctx context.Context, userid int64, s Server, m map[string]any) (map[string]any, error) {
 	slog.Info("Getting next question")
@@ -58,13 +58,20 @@ func GetNextQuestion(ctx context.Context, userid int64, s Server, m map[string]a
 	}
 	var algo sql_queries.SpacingAlgorithm
 	if defaultAlgo.Valid {
-
+		algosIds := []int{}
+		found := false
 		for _, curAlgo := range algos {
+			algosIds = append(algosIds, int(curAlgo.AlgorithmID))
 			if curAlgo.AlgorithmID == defaultAlgo.Int64 {
+				algo = curAlgo
+				found = true
 				break
 			}
 		}
-		panic(fmt.Sprintln("default algo does not match a valid algorithm id", algos, defaultAlgo))
+		if !found {
+			slog.Error("default algo does not match a valid algorithm id", "algoId", algosIds, "defaultAlgo", defaultAlgo.Int64)
+			return nil, ErrDefaultAlgoDoesntMatch
+		}
 	} else if len(algos) > 0 {
 		algo = algos[0]
 	} else {
@@ -140,6 +147,8 @@ func GetNextQuestion(ctx context.Context, userid int64, s Server, m map[string]a
 		}
 	}
 
+	slog.Info("Running algo", "name", algo.AlgorithmName)
+
 	ret, err := runAlgorithm(ctx, AlgorithmStruct{
 		Alloc:         algo.Alloc,
 		ApiVersion:    int(algo.ApiVersion),
@@ -175,6 +184,16 @@ func GetNextQuestion(ctx context.Context, userid int64, s Server, m map[string]a
 
 	}
 
-	resultMap := map[string]any{"amount-due-cards": ret.lenDueCards, "amount-new-cards": ret.lenNewCards, "amount-non-due-cards": ret.lenNonDueCards, "id": ret.nextCard, "question": question, "answer": answer, "card-type": ret.typeOfNextCard}
+	resultMap := map[string]any{"amount-due-cards": ret.lenDueCards,
+		"amount-new-cards":     ret.lenNewCards,
+		"amount-non-due-cards": ret.lenNonDueCards,
+		"id":                   ret.nextCard,
+		"question":             question,
+		"answer":               answer,
+		"card-type":            ret.typeOfNextCard,
+		"new-cards":            ret.lenNewCards,
+		"due-cards":            ret.lenDueCards,
+		"non-due-cards":        ret.lenNonDueCards,
+	}
 	return resultMap, nil
 }

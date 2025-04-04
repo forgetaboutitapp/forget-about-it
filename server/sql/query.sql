@@ -2,7 +2,7 @@
 INSERT INTO Users(user_id, role, created) VALUES(?, ?, ?);
 
 -- name: AddLogin :exec
-INSERT INTO Logins(login_uuid, user_id, device_description, created) VALUES(?, ?, ?, ?);
+INSERT INTO Logins(login_uuid, user_id, device_description, created, index_id) VALUES(?, ?, ?, ?, ?);
 
 -- name: GetUser :many
 SELECT user_id FROM Users where role=?;
@@ -20,7 +20,7 @@ INSERT INTO Logs_Logins (login_uuid, current_time) VALUES (?, ?);
 INSERT INTO Logins (login_uuid, user_id, device_description, created) values (?, ?, ?, ?) returning login_uuid;
 
 -- name: FindLoginIDByUser :many
-SELECT Logins.device_description, Logins.created, Logins.login_uuid, max(Logs_Logins.current_time) as lastUsed FROM Logins LEFT OUTER JOIN Logs_Logins ON Logins.login_uuid=Logs_Logins.login_uuid WHERE Logins.user_id=? GROUP BY Logins.device_description, Logins.login_uuid;
+SELECT Logins.index_id, Logins.device_description, Logins.created, Logins.login_uuid, max(Logs_Logins.current_time) as lastUsed FROM Logins LEFT OUTER JOIN Logs_Logins ON Logins.login_uuid=Logs_Logins.login_uuid WHERE Logins.user_id=? GROUP BY Logins.device_description, Logins.login_uuid;
 
 -- name: RegisterLogin :exec
 INSERT INTO Logs_Logins(login_uuid, current_time) VALUES(?, ?);
@@ -91,3 +91,15 @@ SELECT default_algorithm from Users WHERE user_id = ?;
 
 -- name: SetDefaultAlgorithm :exec
 UPDATE users SET default_algorithm=? WHERE user_id=?;
+
+-- name: DeleteAlgorithmByName :exec
+DELETE FROM spacing_algorithms WHERE algorithm_name=?;
+
+-- name: DeleteLoginByIndexId :exec
+DELETE FROM Logins WHERE index_id=?;
+
+-- name: GetLoginUUIDFromIndexId :one
+SELECT * from Logins where index_id=?;
+
+-- name: DeleteLoginsFromLogs :exec
+DELETE FROM Logs_Logins WHERE login_uuid=?;

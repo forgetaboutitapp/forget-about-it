@@ -41,6 +41,8 @@ func main() {
 	http.DefaultServeMux.Handle("/api/v0/secure/get-next-question", secure.Server{Db: q, Next: secure.GetNextQuestion, OrigDB: db})
 	http.DefaultServeMux.Handle("/api/v0/secure/upload-algorithm", secure.Server{Db: q, Next: secure.UploadAlgorithm, OrigDB: db})
 	http.DefaultServeMux.Handle("/api/v0/secure/set-default-algorithm", secure.Server{Db: q, Next: secure.SetDefaultAlgorithm, OrigDB: db})
+	http.DefaultServeMux.Handle("/api/v0/secure/remove-login", secure.Server{Db: q, Next: secure.RemoveLogin, OrigDB: db})
+	http.DefaultServeMux.Handle("/api/v0/secure/remove-algorithm", secure.Server{Db: q, Next: secure.RemoveAlgorithm, OrigDB: db})
 
 	address := fmt.Sprintf(":%d", *port)
 	fmt.Printf("Starting server on address %s\n", address)

@@ -13,8 +13,10 @@ abstract class FetchData {
   Future<String> getAllTags();
   Future<String> getNextQuestion(ISet<String> tags);
   Future<void> gradeQuestion(int questionID, bool correct);
-  Future<void> uploadAlgorithm(String data);
+  Future<String?> uploadAlgorithm(String data);
   Future<void> setDefaultAlgorithm(int algorithmID);
+  Future<String?> removeLogin(String loginId);
+  Future<String?> removeAlgorithm(String algorithmName);
 }
 
 abstract class GenericFilepicker {

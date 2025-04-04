@@ -5,12 +5,14 @@ import (
 	"errors"
 	"log/slog"
 	"slices"
+	"strconv"
 	"time"
 
 	"github.com/forgetaboutitapp/forget-about-it/server/pkg/sql_queries"
 )
 
 type RemoteDevice struct {
+	LoginId   string `json:"login-id,omitempty"`
 	LastUsed  *int64 `json:"last-used,omitempty"`
 	Title     string `json:"title"`
 	DateAdded int64  `json:"date-added"`
@@ -62,13 +64,23 @@ func GetRemoteSettings(ctx context.Context, userid int64, s Server, _ map[string
 	}
 
 	settings := RemoteSettings{}
-	for _, row := range userSettingsRows {
+	indexOfCurrentDevice := -1
+	token := ctx.Value(tokenID).(string)
+	for index, row := range userSettingsRows {
 		var lastUsedString *int64 = nil
 		if val, ok := row.Lastused.(int64); ok {
 			lastUsedString = &val
 		}
-		settings.RemoteDevices = append(settings.RemoteDevices, RemoteDevice{Title: row.DeviceDescription, LastUsed: lastUsedString, DateAdded: row.Created})
+		if token == row.LoginUuid {
+			indexOfCurrentDevice = index
+		}
+		settings.RemoteDevices = append(settings.RemoteDevices, RemoteDevice{Title: row.DeviceDescription, LastUsed: lastUsedString, DateAdded: row.Created, LoginId: strconv.Itoa(int(row.IndexID))})
 	}
+	if indexOfCurrentDevice == -1 {
+		slog.Error("row not found", "userSettingsRows", userSettingsRows, "token", token)
+		return nil, ErrCantFindUser
+	}
+	settings.RemoteDevices[indexOfCurrentDevice], settings.RemoteDevices[0] = settings.RemoteDevices[0], settings.RemoteDevices[indexOfCurrentDevice]
 	for _, row := range algorithmsRows {
 		settings.RemoteAlgorithms = append(settings.RemoteAlgorithms, RemoteAlgorithm{
 			AlgorithmID:    uint32(row.AlgorithmID),
