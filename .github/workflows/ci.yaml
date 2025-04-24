@@ -83,7 +83,7 @@ jobs:
               if [ "$os" == "windows" ]; then
                 ext=".exe"
               fi
-              GOOS=$os GOARCH=$arch go build --ldflags '-extldflags "-static"' -o ${{ github.workspace }}/tmp-release/$os-$arch/provision${ext} ./cmd/provision
+              GOOS=$os GOARCH=$arch go build --ldflags '-extldflags "-static"' -o ${{ github.workspace }}/tmp-release/forget-about-it-$os-$arch/provision${ext} ./cmd/provision
             done
           done
       - name: Build server app
@@ -96,7 +96,7 @@ jobs:
               if [ "$os" == "windows" ]; then
                 ext=".exe"
               fi
-              GOOS=$os GOARCH=$arch go build --ldflags '-extldflags "-static"' -o ${{ github.workspace }}/tmp-release/$os-$arch/server${ext} ./cmd/server
+              GOOS=$os GOARCH=$arch go build --ldflags '-extldflags "-static"' -o ${{ github.workspace }}/tmp-release/forget-about-it-$os-$arch/server${ext} ./cmd/server
             done
           done
           mkdir -p ${{ github.workspace }}/releases/
