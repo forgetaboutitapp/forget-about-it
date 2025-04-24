@@ -104,9 +104,9 @@ jobs:
           for os in linux windows freebsd openbsd darwin; do
             for arch in arm64 amd64; do
               if [ "$os" == "windows" ]; then
-                  zip -r ${{ github.workspace }}/releases/forget-about-it-${os}-${arch}.zip $os-$arch
+                  zip -r ${{ github.workspace }}/releases/forget-about-it-${os}-${arch}.zip forget-about-it-$os-$arch
               else
-                tar -czvf ${{ github.workspace }}/releases/forget-about-it-${os}-${arch}.tar.gz $os-$arch
+                tar -czvf ${{ github.workspace }}/releases/forget-about-it-${os}-${arch}.tar.gz forget-about-it-$os-$arch
               fi
             done
           done
