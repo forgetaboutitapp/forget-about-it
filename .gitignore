@@ -60,3 +60,5 @@ server/web
 algorithms-built/*
 
 **/*.exe
+
+.vscode

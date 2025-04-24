@@ -7,11 +7,13 @@ import 'package:app/screens/settings/add_algorithm.dart';
 import 'package:app/screens/settings/models/model.dart';
 import 'package:app/screens/settings/qr_dialog.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_settings_ui/flutter_settings_ui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class SettingsScreen extends HookConsumerWidget {
   static const location = '/settings';
@@ -33,6 +35,17 @@ class SettingsScreen extends HookConsumerWidget {
     final stillWaitingForRemoteServer = useState(true);
 
     final remoteSettings = ref.watch(remoteSettingsNotifierProvider);
+    final ValueNotifier<bool?> hasNotificationPermission = useState(null);
+    final ValueNotifier<bool?> permDenied = useState(null);
+
+    useEffect(() {
+      () async {
+        permDenied.value = await Permission.notification.isPermanentlyDenied;
+        hasNotificationPermission.value =
+            await Permission.notification.isGranted;
+      }();
+      return null;
+    }, []);
     useEffect(() {
       refresh(stillWaitingForRemoteServer, ref, context);
       return null;
@@ -48,17 +61,23 @@ class SettingsScreen extends HookConsumerWidget {
                 SettingsSection(
                   title: Text('Local Setting'),
                   tiles: [
-                    SettingsTile.switchTile(
-                      initialValue: false,
-                      onToggle: null,
-                      title: Text('Enable Notifications'),
-                    ),
-                    SettingsTile.navigation(
-                      enabled: false,
-                      title: Text('Daily Notification Time'),
-                      value: null,
-                      onPressed: null,
-                    ),
+                    if (!kIsWeb)
+                      SettingsTile.switchTile(
+                        initialValue: hasNotificationPermission.value == true,
+                        onToggle: permDenied.value == null ||
+                                permDenied.value == true
+                            ? null
+                            : (v) async {
+                                if (hasNotificationPermission.value != true) {
+                                  await Permission.notification.request();
+                                  permDenied.value = await Permission
+                                      .notification.isPermanentlyDenied;
+                                  hasNotificationPermission.value =
+                                      await Permission.notification.isGranted;
+                                }
+                              },
+                        title: Text('Enable Notifications Permissions'),
+                      ),
                     SettingsTile.switchTile(
                       initialValue: localCurDarkMode.value,
                       onToggle: (v) {
@@ -66,11 +85,6 @@ class SettingsScreen extends HookConsumerWidget {
                         switchDarkMode(v);
                       },
                       title: Text('Dark Theme'),
-                    ),
-                    SettingsTile.switchTile(
-                      initialValue: true,
-                      onToggle: (v) => {},
-                      title: Text('Cutesy Content'),
                     ),
                   ],
                 ),
@@ -170,11 +184,11 @@ class SettingsScreen extends HookConsumerWidget {
                               final lastUsed = e.lastUsed;
                               return SettingsTile(
                                 title: Text(e.title),
-                                value: Row(
+                                value: Column(
                                   children: [
                                     Padding(
-                                      padding: const EdgeInsets.fromLTRB(
-                                          0, 0, 16.0, 0),
+                                      padding:
+                                          const EdgeInsets.fromLTRB(8, 8, 8, 8),
                                       child: Text(
                                           'Date Added: ${DateFormat.yMd().format(e.dateAdded)}'),
                                     ),

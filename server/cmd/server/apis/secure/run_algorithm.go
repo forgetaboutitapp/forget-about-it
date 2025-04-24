@@ -104,6 +104,7 @@ func runAlgorithm(ctx context.Context, algo AlgorithmStruct, allQuestions []sql_
 		slog.Error("Unable to allocate", "algo", algo.AlgorithmName, "err", err)
 		return AlgoReturn{}, errors.Join(ErrCantAllocate, err)
 	}
+
 	_, err = getCard.Call(ctx, addr[0], uint64(time.Now().Unix()))
 	if err != nil {
 		slog.Error("Unable to get next card", "algo", algo.AlgorithmName, "time", time.Now().Unix(), "err", err)
@@ -135,6 +136,7 @@ func runAlgorithm(ctx context.Context, algo AlgorithmStruct, allQuestions []sql_
 	case 3:
 		typeOfCardString = "non-due-card"
 	}
+
 	return AlgoReturn{
 		lenNewCards:    int(lenNewCards),
 		lenDueCards:    int(lenDueCards),

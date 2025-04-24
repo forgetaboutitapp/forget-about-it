@@ -28,7 +28,7 @@ sealed class QuizQuestionState with _$QuizQuestionState {
   }) = QuizQuestionStateData;
 }
 
-QuizQuestionStateData _quizQuestionStateDatafromJson(
+QuizQuestionStateData quizQuestionStateDatafromJson(
         Map<String, dynamic> data) =>
     QuizQuestionStateData(
         id: data['id'],
@@ -86,7 +86,7 @@ class QuizQuestions extends _$QuizQuestions {
       _state = QuizQuestionState.waiting();
       ref.invalidateSelf();
 
-      _state = _quizQuestionStateDatafromJson(
+      _state = quizQuestionStateDatafromJson(
         jsonDecode(
           await client.getNextQuestion(tagsQuery),
         ),

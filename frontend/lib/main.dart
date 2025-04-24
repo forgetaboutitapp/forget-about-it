@@ -1,25 +1,46 @@
+import 'dart:developer';
+import 'dart:io';
+
+import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:app/data/constants.dart';
 import 'package:app/interop/get_url.dart';
 import 'package:app/network/interfaces.dart';
 import 'package:app/screens/bulk-edit/view.dart';
 import 'package:app/screens/quiz/view.dart';
+import 'package:app/service.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/adapters.dart';
 
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'interop/notification_service_stub.dart';
 import 'network/network.dart';
 import 'screens/login/view.dart';
 import 'screens/home/view.dart';
 import 'screens/settings/view.dart';
+import 'screens/stats/view.dart';
 
 void main() async {
+  log('starting');
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
   await Hive.openBox<dynamic>(localSettingsHiveBox);
   usePathUrlStrategySafe();
+  if (!kIsWeb && Platform.isAndroid) {
+    await NotificationService().initNotification();
+    await AndroidAlarmManager.initialize();
+    await AndroidAlarmManager.periodic(
+      const Duration(minutes: 5),
+      0,
+      printHello,
+      wakeup: true,
+      rescheduleOnReboot: true,
+      allowWhileIdle: true,
+    );
+  }
 
   runApp(
     ProviderScope(
@@ -59,6 +80,12 @@ class MainApp extends HookConsumerWidget {
         path: LoginScreen.location,
         builder: (context, state) => LoginScreen(
           client: http.Client(),
+        ),
+      ),
+      GoRoute(
+        path: Stats.location,
+        builder: (context, state) => Stats(
+          remoteServer: _getRemoteServer(),
         ),
       ),
       GoRoute(

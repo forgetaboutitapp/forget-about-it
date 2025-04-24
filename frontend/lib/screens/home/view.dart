@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../settings/view.dart';
+import '../stats/view.dart';
 import 'service.dart';
 
 class HomeScreen extends HookConsumerWidget {
@@ -38,6 +39,12 @@ class HomeScreen extends HookConsumerWidget {
                 value: () => context.go(SettingsScreen.location),
                 child: Text(
                   'Settings',
+                ),
+              ),
+              PopupMenuItem(
+                value: () => context.go(Stats.location),
+                child: Text(
+                  'Statistics',
                 ),
               ),
             ],

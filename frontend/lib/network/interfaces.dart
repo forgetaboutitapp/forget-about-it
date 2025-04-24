@@ -17,6 +17,7 @@ abstract class FetchData {
   Future<void> setDefaultAlgorithm(int algorithmID);
   Future<String?> removeLogin(String loginId);
   Future<String?> removeAlgorithm(String algorithmName);
+  Future<String> getStats(DateTime startTime, DateTime endTime);
 }
 
 abstract class GenericFilepicker {

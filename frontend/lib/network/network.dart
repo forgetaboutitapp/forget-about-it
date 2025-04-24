@@ -284,4 +284,31 @@ class RemoteServer implements FetchData {
       throw ServerException(code: -1);
     }
   }
+
+  @override
+  Future<String> getStats(DateTime startTime, DateTime endTime) async {
+    try {
+      final ret = await client.post(
+        Uri.parse('$remoteHost/api/v0/secure/get-stats'),
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'start-year': startTime.year,
+          'start-month': startTime.month,
+          'start-day': startTime.day,
+          'end-year': endTime.year,
+          'end-month': endTime.month,
+          'end-day': endTime.day
+        }),
+      );
+      if (ret.statusCode != 200) {
+        throw ServerException(code: ret.statusCode);
+      }
+      return ret.body;
+    } on http.ClientException catch (_) {
+      throw ServerException(code: -1);
+    }
+  }
 }
