@@ -33,7 +33,7 @@ func RemoveLogin(ctx context.Context, userid int64, s Server, args map[string]an
 	}
 	err = qtx.DeleteLoginByIndexId(ctx, int64(realId))
 	if err != nil {
-		slog.Error("cannot delete login", "id", loginId, "err", err)
+		slog.Error("cannot delete login", "loginUUID", loginUUID, "id", loginId, "realId", realId, "err", err)
 		return nil, err
 	}
 	err = tx.Commit()

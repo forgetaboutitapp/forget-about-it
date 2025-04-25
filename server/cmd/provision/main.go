@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"math"
 	"math/big"
+	mathrand "math/rand/v2"
 	"path/filepath"
 	"time"
 
@@ -68,13 +69,13 @@ func AddUser(q *sql_queries.Queries) (string, string, error) {
 		UserID: userid,
 		Role:   0,
 	})
-
 	loginUuid := uuid.New()
 	q.AddLogin(context.Background(), sql_queries.AddLoginParams{
 		LoginUuid:         loginUuid.String(),
 		UserID:            userid,
 		DeviceDescription: "Initial Device",
 		Created:           time.Now().Unix(),
+		IndexID:           int64(mathrand.Uint32()),
 	})
 	mnemonic, err := uuidUtils.NewMnemonicFromUuid(loginUuid)
 	if err != nil {
@@ -92,6 +93,7 @@ func AddLogin(ctx context.Context, q *sql_queries.Queries, id int64) (string, st
 		UserID:            id,
 		DeviceDescription: fmt.Sprintf("Added on %s", time.Now().UTC().Format(time.DateTime)),
 		Created:           time.Now().Unix(),
+		IndexID:           int64(mathrand.Uint32()),
 	})
 	m, err := uuidUtils.NewMnemonicFromUuid(newLoginUuid)
 	if err != nil {

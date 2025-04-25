@@ -74,6 +74,7 @@ func GetRemoteSettings(ctx context.Context, userid int64, s Server, _ map[string
 		if token == row.LoginUuid {
 			indexOfCurrentDevice = index
 		}
+		slog.Info("getting row settings", "desc", row.DeviceDescription, "id", row.IndexID)
 		settings.RemoteDevices = append(settings.RemoteDevices, RemoteDevice{Title: row.DeviceDescription, LastUsed: lastUsedString, DateAdded: row.Created, LoginId: strconv.Itoa(int(row.IndexID))})
 	}
 	if indexOfCurrentDevice == -1 {

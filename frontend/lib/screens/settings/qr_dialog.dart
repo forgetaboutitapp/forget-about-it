@@ -71,7 +71,7 @@ class QRDialog extends HookWidget {
                       label: Text('12 Words'),
                       icon: Icon(Icons.input)),
                   ButtonSegment(
-                      enabled: true,
+                      enabled: false,
                       value: 2,
                       label: Text('Camera'),
                       icon: Icon(Icons.qr_code)),

@@ -141,13 +141,6 @@ class MainBulkEditView extends HookWidget {
                 child: Text('Save'),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: TextButton(
-                onPressed: () {},
-                child: Text('Cancel'),
-              ),
-            ),
           ],
         )
       ],
