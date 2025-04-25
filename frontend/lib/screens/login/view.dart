@@ -9,7 +9,7 @@ import 'package:http/http.dart' as http;
 import 'token_login.dart';
 import 'twelve_words_form.dart';
 
-enum LoginMethod { twelveWords, camera, token }
+enum LoginMethod { twelveWords, token }
 
 class LoginScreen extends HookConsumerWidget {
   static String location = '/login';
@@ -55,9 +55,6 @@ class LoginScreen extends HookConsumerWidget {
                             client: client,
                             remoteURL: remoteURL,
                           ),
-                        LoginMethod.camera => getCamera((Code c) {
-                            debugPrint('barcodes: ${c.text}');
-                          }),
                         LoginMethod.token => TokenLogin(
                             client: client,
                             remoteURL: remoteURL,
@@ -82,15 +79,13 @@ class LoginScreen extends HookConsumerWidget {
                             ],
                             selected: switch (show12Words.value) {
                               LoginMethod.twelveWords => {1},
-                              LoginMethod.camera => {2},
-                              LoginMethod.token => {3},
+                              LoginMethod.token => {2},
                             },
                             onSelectionChanged: (v) =>
                                 switch (v.map((e) => e).toList()[0]) {
                                   1 => show12Words.value =
                                       LoginMethod.twelveWords,
-                                  2 => show12Words.value = LoginMethod.camera,
-                                  3 => show12Words.value = LoginMethod.token,
+                                  2 => show12Words.value = LoginMethod.token,
                                   _ => throw AssertionError(
                                       'selected an invalid state $v')
                                 }),

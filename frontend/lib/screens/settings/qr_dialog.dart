@@ -17,7 +17,7 @@ class QRDialog extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final ValueNotifier<String?> qrCodeData = useState(null);
-    final show12Words = useState(LoginMethod.camera);
+    final show12Words = useState(LoginMethod.twelveWords);
     useEffect(() {
       bool isCancelled = false;
       remoteServer.generateNewToken().then((e) async {
@@ -54,10 +54,6 @@ class QRDialog extends HookWidget {
               child: switch (show12Words.value) {
                 LoginMethod.twelveWords =>
                   TwelveWordView(twelveWords: decode['mnemonic']),
-                LoginMethod.camera => QrImageViewer(
-                    uuid: decode['new-uuid'],
-                    remoteServer: remoteServer,
-                  ),
                 LoginMethod.token => TokenView(
                     remoteHost: remoteServer.getRemoteHost(),
                     uuid: decode['new-uuid'],
@@ -71,25 +67,18 @@ class QRDialog extends HookWidget {
                       label: Text('12 Words'),
                       icon: Icon(Icons.input)),
                   ButtonSegment(
-                      enabled: false,
                       value: 2,
-                      label: Text('Camera'),
-                      icon: Icon(Icons.qr_code)),
-                  ButtonSegment(
-                      value: 3,
                       label: Text('Token'),
                       icon: Icon(Icons.text_fields)),
                 ],
                 selected: switch (show12Words.value) {
                   LoginMethod.twelveWords => {1},
-                  LoginMethod.camera => {2},
-                  LoginMethod.token => {3},
+                  LoginMethod.token => {2},
                 },
                 onSelectionChanged: (v) =>
                     switch (v.map((e) => e).toList()[0]) {
                       1 => show12Words.value = LoginMethod.twelveWords,
-                      2 => show12Words.value = LoginMethod.camera,
-                      3 => show12Words.value = LoginMethod.token,
+                      2 => show12Words.value = LoginMethod.token,
                       _ => throw AssertionError('selected an invalid state $v')
                     }),
           ],
