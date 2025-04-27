@@ -68,12 +68,7 @@ class LoginScreen extends HookConsumerWidget {
                                   label: Text('12 Words'),
                                   icon: Icon(Icons.input)),
                               ButtonSegment(
-                                  enabled: !kIsWeb,
                                   value: 2,
-                                  label: Text('Camera'),
-                                  icon: Icon(Icons.camera_alt)),
-                              ButtonSegment(
-                                  value: 3,
                                   label: Text('Token'),
                                   icon: Icon(Icons.text_fields)),
                             ],
