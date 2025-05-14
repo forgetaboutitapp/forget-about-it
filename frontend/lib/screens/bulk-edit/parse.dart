@@ -19,88 +19,75 @@ String _decode<A>(A a) => a
     .replaceAll('%', '\\%');
 
 Result<IList<Flashcard>> parse(String data) {
-  final splitData = data.split('\n');
-  final flashcardResultList = List.generate(splitData.length,
-          (index) => (index, removeCommentsAndSplit(index, splitData[index])))
-      .where((line) => line.$2.length != 1 || line.$2[0] != '')
-      .map((l) {
-    final index = l.$1;
-    final line = l.$2;
-    if (line.length != 7 || line[6].trim().isNotEmpty) {
-      return Err<Flashcard>(
-        InvalidNumberOfFields(
-            lineNumber: index,
-            stringWithError: splitData[index],
-            numberOfFields: line.length),
-      ) as Result<Flashcard>;
-    }
-    int? id;
-    try {
-      id = line[0] == '' ? null : int.parse(line[0]);
-    } on FormatException catch (_) {
-      return Err<Flashcard>(
-        QuestionIDNotIntException(
-            id: line[0], question: line[1], lineNumber: index),
-      ) as Result<Flashcard>;
-    } on Exception catch (e) {
-      return Err<Flashcard>(Exception(e)) as Result<Flashcard>;
-    }
-    return Ok(
-      Flashcard(
+  return Result.safe(() {
+    final splitData = data.split('\n');
+    final flashcardResultList = List.generate(splitData.length,
+            (index) => (index, removeCommentsAndSplit(index, splitData[index])))
+        .where((line) => line.$2.length != 1 || line.$2[0] != '')
+        .map((l) {
+      final index = l.$1;
+      final line = l.$2;
+      if (line.length != 7 || line[6].trim().isNotEmpty) {
+        throw InvalidNumberOfFields(
+          lineNumber: index,
+          stringWithError: splitData[index],
+          numberOfFields: line.length,
+        );
+      }
+      int? id;
+      try {
+        id = line[0] == '' ? null : int.parse(line[0]);
+      } on FormatException catch (_) {
+        throw QuestionIDNotIntException(
+          id: line[0],
+          question: line[1],
+          lineNumber: index,
+        );
+      } on Exception catch (_) {
+        rethrow;
+      }
+      return Flashcard(
         id: id,
         question: line[1],
         answer: line[2],
         explanation: line[3],
         memoHint: line[4],
         tags: line[5].split(' ').where((e) => e.trim() != '').toIList(),
-      ),
-    ) as Result<Flashcard>;
-  }).toIList();
+      );
+    }).toIList();
 
-  IList<Flashcard> flashcardList = <Flashcard>[].toIList();
-  for (final flashcardResult in flashcardResultList) {
-    switch (flashcardResult) {
-      case Ok(:final value):
-        {
-          flashcardList = flashcardList.add(value);
-        }
-      case Err(:final value):
-        {
-          return Err(value);
-        }
-    }
-  }
-  // ensure that ids don't conflict and ensure all questions have tags
-  HashSet cardIDs = HashSet();
-  HashSet cardQuestions = HashSet();
+    IList<Flashcard> flashcardList = flashcardResultList;
 
-  for (final flashcard in flashcardList) {
-    if (flashcard.tags.isEmpty ||
-        (flashcard.tags.length == 1 && flashcard.tags[0] == '')) {
-      return Err(
-          NoTagException(id: flashcard.id, question: flashcard.question));
-    }
-    final id = flashcard.id;
-    final question = flashcard.question;
-    if (id != null) {
-      if (cardIDs.contains(id)) {
-        return Err(
-          IDsConflict(
-            conflictingID: id,
-          ),
+    // ensure that ids don't conflict and ensure all questions have tags
+    HashSet cardIDs = HashSet();
+    HashSet cardQuestions = HashSet();
+
+    for (final flashcard in flashcardList) {
+      if (flashcard.tags.isEmpty ||
+          (flashcard.tags.length == 1 && flashcard.tags[0] == '')) {
+        throw NoTagException(
+          id: flashcard.id,
+          question: flashcard.question,
         );
       }
-      cardIDs.add(id);
+      final id = flashcard.id;
+      final question = flashcard.question;
+      if (id != null) {
+        if (cardIDs.contains(id)) {
+          throw IDsConflict(
+            conflictingID: id,
+          );
+        }
+        cardIDs.add(id);
+      }
+      if (cardQuestions.contains(question)) {
+        throw QuestionsConflict(conflictingQuestion: question);
+      }
+      cardQuestions.add(question);
     }
-    if (cardQuestions.contains(question)) {
-      return Err(
-        QuestionsConflict(conflictingQuestion: question),
-      );
-    }
-    cardQuestions.add(question);
-  }
 
-  return Ok(flashcardList);
+    return flashcardList;
+  });
 }
 
 IList<String> removeCommentsAndSplit(int lineNumber, String splitData) {

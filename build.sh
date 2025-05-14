@@ -5,6 +5,7 @@ go run ./generate.go
 cd frontend
 dart run build_runner build -d
 cd ../server
+pwd
 go run ./generate.go
 cd ../frontend
 flutter build web --release
