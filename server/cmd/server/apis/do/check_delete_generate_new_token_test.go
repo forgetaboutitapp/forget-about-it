@@ -12,7 +12,7 @@ import (
 )
 
 func TestGenerateNewTokenWithMnemonic(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	q, db := start(t)
 	server := do.Server{Db: q, OrigDB: db}
@@ -58,7 +58,7 @@ func TestGenerateNewTokenWithMnemonic(t *testing.T) {
 }
 
 func TestGenerateNewTokenWithUUID(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	q, db := start(t)
 	server := do.Server{Db: q, OrigDB: db}

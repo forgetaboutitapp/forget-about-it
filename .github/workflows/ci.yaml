@@ -74,14 +74,12 @@ jobs:
           cd protobufs
           just
           cd ..
-          cd forget-about-it
+          cd forget-about-it/server
           just
           go test ./...
-          cd frontend
-          flutter build web --release
-          mkdir ../server/web -p
-          cp ./build/web ../server -rf
-          /home/runner/work/forget-about-it/forget-about-it/server
+          mkdir /home/runner/work/forget-about-it/forget-about-it/server/web -p
+          cp /home/runner/work/forget-about-it/forget-about-it/frontend/build/web ../server -rf
+          cd /home/runner/work/forget-about-it/forget-about-it/server
           for os in linux windows freebsd openbsd darwin; do
             for arch in arm64 amd64; do
               mkdir -p  ${{ github.workspace }}/tmp-release/${os}-${arch}
