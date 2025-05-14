@@ -77,10 +77,7 @@ jobs:
           cd forget-about-it/server
           just
           pwd
-          echo "about to run test"
-          go test ./...
-          mkdir /home/runner/work/forget-about-it/forget-about-it/server/web -p
-          cp /home/runner/work/forget-about-it/forget-about-it/frontend/build/web ../server -rf
+          echo "about to do full build"
           cd /home/runner/work/forget-about-it/forget-about-it/server
           for os in linux windows freebsd openbsd darwin; do
             for arch in arm64 amd64; do

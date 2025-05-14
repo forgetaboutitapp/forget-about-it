@@ -22,3 +22,6 @@ pwd
 ls
 sqlc generate
 echo "finished sqlc"
+go test ./...
+mkdir /home/runner/work/forget-about-it/forget-about-it/server/web -p
+cp /home/runner/work/forget-about-it/forget-about-it/frontend/build/web ../server -rf
