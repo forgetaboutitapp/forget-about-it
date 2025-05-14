@@ -1,12 +1,15 @@
-import 'dart:convert';
-
-import 'package:app/data/errors.dart';
 import 'package:app/network/interfaces.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../fn/fn.dart';
+import '../../protobufs-build/client_to_server.pb.dart' as client_to_server;
+import '../../protobufs-build/server_to_client.pbenum.dart'
+    as server_to_client_enums;
+
 part 'model.g.dart';
+
 part 'model.freezed.dart';
 
 enum QuestionType { dueQuestion, nonDueQuestion, newQuestion }
@@ -14,9 +17,9 @@ enum QuestionType { dueQuestion, nonDueQuestion, newQuestion }
 @freezed
 sealed class QuizQuestionState with _$QuizQuestionState {
   factory QuizQuestionState.waiting() = QuizQuestionStateWaiting;
+
   factory QuizQuestionState.none() = QuizQuestionStateNone;
-  factory QuizQuestionState.error({required Exception exception}) =
-      QuizQuestionStateError;
+
   factory QuizQuestionState.data({
     required int id,
     required String question,
@@ -28,74 +31,83 @@ sealed class QuizQuestionState with _$QuizQuestionState {
   }) = QuizQuestionStateData;
 }
 
-QuizQuestionStateData quizQuestionStateDatafromJson(
-        Map<String, dynamic> data) =>
-    QuizQuestionStateData(
-        id: data['id'],
-        question: data['question'],
-        answer: data['answer'],
-        dueCards: data['due-cards'],
-        newCards: data['new-cards'],
-        nonDueCards: data['non-due-cards'],
-        questionType: switch (data['card-type'].toString()) {
-          'new-card' => QuestionType.newQuestion,
-          'due-card' => QuestionType.dueQuestion,
-          'non-due-card' => QuestionType.nonDueQuestion,
-          _ => throw Exception('No card type defined as ${data['card-type']}')
-        });
-
 @riverpod
 class QuizQuestions extends _$QuizQuestions {
-  QuizQuestionState _state = QuizQuestionState.waiting();
+  Result<QuizQuestionState> _state = Ok(QuizQuestionState.waiting());
 
   @override
-  QuizQuestionState build() {
+  Result<QuizQuestionState> build() {
     return _state;
   }
 
   Future<void> gradeQuestion(
-    FetchData client,
+    FetchDataWithToken client,
     ISet<String>? tagsQuery,
     int questionID,
     bool correct,
   ) async {
-    try {
-      _state = QuizQuestionState.waiting();
-      ref.invalidateSelf();
+    _state = Ok(QuizQuestionState.waiting());
+    ref.invalidateSelf();
 
-      await client.gradeQuestion(questionID, correct);
-
-      await getNextQuestion(client, tagsQuery);
-    } on ServerException catch (e) {
-      _state = QuizQuestionState.error(exception: e);
-      ref.invalidateSelf();
-    }
+    final p = await client.gradeQuestion(
+      client_to_server.GradeQuestion(questionid: questionID, correct: correct),
+    );
+    (await p.doMap((_) async => await getNextQuestion(client, tagsQuery)))
+        .match(
+            onOk: (_) {},
+            onErr: (e) {
+              _state = Err(e);
+              ref.invalidateSelf();
+            });
   }
 
-  Future<void> getNextQuestion(
-    FetchData client,
+  Future<Result<()>> getNextQuestion(
+    FetchDataWithToken client,
     ISet<String>? tagsQuery,
   ) async {
-    try {
-      if (tagsQuery == null) {
-        _state = QuizQuestionState.error(exception: NoTagException());
-        ref.invalidateSelf();
-
-        return;
-      }
-      _state = QuizQuestionState.waiting();
+    if (tagsQuery == null) {
+      _state = Err(NoTagException());
       ref.invalidateSelf();
-
-      _state = quizQuestionStateDatafromJson(
-        jsonDecode(
-          await client.getNextQuestion(tagsQuery),
-        ),
-      );
-      ref.invalidateSelf();
-    } on ServerException catch (e) {
-      _state = QuizQuestionState.error(exception: e);
-      ref.invalidateSelf();
+      return Err(NoTagException());
     }
+    _state = Ok(QuizQuestionState.waiting());
+    ref.invalidateSelf();
+
+    _state = switch (await client.getNextQuestion(
+      client_to_server.GetNextQuestion(
+        tags: tagsQuery.toIList(),
+      ),
+    )) {
+      Err(value: final e) => Err(e),
+      Ok(value: final v) => Ok(
+          QuizQuestionStateData(
+            id: v.flashcard.id,
+            question: v.flashcard.question,
+            answer: v.flashcard.answer,
+            questionType: switch (v.typeOfQuestion) {
+              server_to_client_enums
+                    .GetNextQuestion_TypeOfQuestion.TYPE_OF_QUESTION_NEW =>
+                QuestionType.newQuestion,
+              server_to_client_enums
+                    .GetNextQuestion_TypeOfQuestion.TYPE_OF_QUESTION_DUE =>
+                QuestionType.dueQuestion,
+              server_to_client_enums
+                    .GetNextQuestion_TypeOfQuestion.TYPE_OF_QUESTION_NON_DUE =>
+                QuestionType.nonDueQuestion,
+              server_to_client_enums.GetNextQuestion_TypeOfQuestion
+                    .TYPE_OF_QUESTION_UNSPECIFIED =>
+                throw UnimplementedError(),
+              server_to_client_enums.GetNextQuestion_TypeOfQuestion() =>
+                throw UnimplementedError(),
+            },
+            newCards: v.newQuestions,
+            dueCards: v.dueQuestions,
+            nonDueCards: v.nonDueQuestions,
+          ),
+        ),
+    };
+    ref.invalidateSelf();
+    return Ok(());
   }
 }
 

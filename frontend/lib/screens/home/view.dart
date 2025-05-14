@@ -1,3 +1,4 @@
+import 'package:app/future_widget/future_widget.dart';
 import 'package:app/network/interfaces.dart';
 import 'package:app/screens/bulk-edit/view.dart';
 import 'package:app/screens/general-display/show_error.dart';
@@ -10,13 +11,15 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../fn/fn.dart';
 import '../settings/view.dart';
 import '../stats/view.dart';
 import 'service.dart';
 
 class HomeScreen extends HookConsumerWidget {
   static String location = '/';
-  final FetchData remoteServer;
+  final FetchDataWithToken remoteServer;
+
   const HomeScreen({super.key, required this.remoteServer});
 
   @override
@@ -51,49 +54,33 @@ class HomeScreen extends HookConsumerWidget {
           )
         ],
       ),
-      body: FutureBuilder(
+      body: FutureWidget(
         future: getAllTags(remoteServer),
-        builder: (context, snapshot) => switch (snapshot.connectionState) {
-          ConnectionState.none => Center(child: Text('Error')),
-          ConnectionState.waiting ||
-          ConnectionState.active =>
-            Center(child: CircularProgressIndicator()),
-          ConnectionState.done => buildDisplay(context, snapshot),
-        },
+        built: (context, r) => buildDisplay(context, r),
+        waiting: (context) => Center(child: CircularProgressIndicator()),
       ),
     );
   }
 
-  buildDisplay(
-      BuildContext context, AsyncSnapshot<(IList<Tag>, bool)> snapshot) {
-    if (snapshot.hasError) {
-      WidgetsBinding.instance.addPostFrameCallback(
-        (_) => ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: Colors.red,
-            content: Text(
-              'Error ${snapshot.error}',
-            ),
-          ),
-        ),
-      );
-      return Center(child: Text(''));
-    } else if (snapshot.hasData) {
-      return TagsView(
-        tagList: snapshot.data!.$1,
-        canRun: snapshot.data!.$2,
-        remoteServer: remoteServer,
-      );
-    } else {
-      return Center(child: Text('There is no error or data'));
-    }
+  Widget buildDisplay(BuildContext context, Result<(IList<Tag>, bool)> data) {
+    return switch (data) {
+      Ok(value: final d) =>
+        TagsView(remoteServer: remoteServer, canRun: d.$2, tagList: d.$1),
+      Err(value: final error) => localShowError(context, error),
+    };
+  }
+
+  Widget localShowError(BuildContext context, Exception error) {
+    showErrorDelayed(context, error.toString());
+    return Container();
   }
 }
 
 class TagsView extends HookWidget {
-  final FetchData remoteServer;
+  final FetchDataWithToken remoteServer;
   final IList<Tag> tagList;
   final bool canRun;
+
   const TagsView({
     super.key,
     required this.remoteServer,
@@ -111,10 +98,14 @@ class TagsView extends HookWidget {
         Expanded(
           child: RefreshIndicator(
             onRefresh: () async {
-              final (tags, canRun) = await getAllTags(remoteServer);
-              tagListResponsive.value = tags;
-              canRunResponsive.value = canRun;
-              selectedTags.value = ISet();
+              (await getAllTags(remoteServer)).match(onErr: (e) {
+                showError(context, e.toString());
+              }, onOk: (v) {
+                final (tags, canRun) = v;
+                tagListResponsive.value = tags;
+                canRunResponsive.value = canRun;
+                selectedTags.value = ISet();
+              });
             },
             child: ScrollConfiguration(
               behavior: ScrollConfiguration.of(context).copyWith(

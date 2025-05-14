@@ -1,23 +1,20 @@
-import 'package:app/screens/bulk-edit/model.dart';
-import 'package:fast_immutable_collections/fast_immutable_collections.dart';
-import 'package:file_picker/file_picker.dart';
+import 'dart:async';
 
-abstract class FetchData {
-  Future<String> getAllQuestions();
-  Future<void> postAllQuestions(IList<Flashcard> flashcard);
-  Future<String> generateNewToken();
-  Future<bool> checkNewToken();
-  Future<void> deleteNewToken();
-  Future<String> getRemoteSettings();
+import 'package:file_picker/file_picker.dart';
+import '../fn/fn.dart';
+import '../protobufs-build/client_to_server.pb.dart' as client_to_server;
+import '../protobufs-build/server_to_client.pb.dart' as server_to_client;
+
+part 'fetch_data_with_token.g.dart';
+
+abstract class FetchDataWithToken with _$FetchDataWithToken {
   String getRemoteHost();
-  Future<String> getAllTags();
-  Future<String> getNextQuestion(ISet<String> tags);
-  Future<void> gradeQuestion(int questionID, bool correct);
-  Future<String?> uploadAlgorithm(String data);
-  Future<void> setDefaultAlgorithm(int algorithmID);
-  Future<String?> removeLogin(String loginId);
-  Future<String?> removeAlgorithm(String algorithmName);
-  Future<String> getStats(DateTime startTime, DateTime endTime);
+}
+
+abstract class FetchDataWithoutToken {
+  String getRemoteHost();
+  Future<Result<server_to_client.GetToken>> getToken(
+      client_to_server.InsecureMessage msg);
 }
 
 abstract class GenericFilepicker {

@@ -1,7 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
+import 'dart:developer' as dev;
 
 import 'package:app/network/interfaces.dart';
+import 'package:app/protobufs-build/client_to_server.pb.dart'
+    as client_to_server;
 import 'package:app/screens/general-display/show_error.dart';
 import 'package:app/screens/settings/add_algorithm.dart';
 import 'package:app/screens/settings/models/model.dart';
@@ -18,7 +20,7 @@ import 'package:permission_handler/permission_handler.dart';
 class SettingsScreen extends HookConsumerWidget {
   static const location = '/settings';
   final bool curDarkMode;
-  final FetchData remoteServer;
+  final FetchDataWithToken remoteServer;
   final GenericFilepicker filepicker;
   final FutureOr<void> Function(bool) switchDarkMode;
   const SettingsScreen({
@@ -92,58 +94,61 @@ class SettingsScreen extends HookConsumerWidget {
                   title: Text('General Setting'),
                   tiles: [
                     ...?remoteSettings?.remoteAlgorithms?.map(
-                      (e) => SettingsTile(
-                        title: Text(e.algorithmName),
-                        description: Text(
-                            'Author: ${e.authorName}\nLicense: ${e.license}\nVersion: ${e.version}\nAdded: ${e.timeAdded}'),
-                        leading: Radio(
-                          value: e.algorithmID,
-                          groupValue: remoteSettings.defaultAlgorithm ?? 0,
-                          onChanged: (int? v) async {
-                            stillWaitingForRemoteServer.value = true;
-                            try {
-                              await remoteServer
-                                  .setDefaultAlgorithm(e.algorithmID);
-                            } on Exception catch (e) {
-                              if (context.mounted) {
-                                showError(context, e.toString());
-                              }
-                            }
-                            if (context.mounted) {
-                              refresh(
-                                  stillWaitingForRemoteServer, ref, context);
-                            }
-                          },
-                        ),
-                        trailing: IconButton(
-                          icon: Icon(Icons.delete),
-                          onPressed:
-                              remoteSettings.defaultAlgorithm == e.algorithmID
-                                  ? null
-                                  : () async {
-                                      try {
-                                        final res = await remoteServer
-                                            .removeAlgorithm(e.algorithmName);
-                                        if (res != null && res != '') {
-                                          final resJson = jsonDecode(res);
-                                          resJson.keys.contains('err');
-                                          if (context.mounted) {
-                                            showError(context,
-                                                'Error: ${resJson['err']}');
-                                          }
-                                        }
+                      (e) {
+                        dev.log(
+                            'algoId: ${e.algorithmID}, remoteSettings.defaultAlgorithm: ${remoteSettings.defaultAlgorithm}');
+                        return SettingsTile(
+                          title: Text(e.algorithmName),
+                          description: Text(
+                              'Author: ${e.authorName}\nLicense: ${e.license}\nVersion: ${e.version}\nAdded: ${e.timeAdded}'),
+                          leading: Radio(
+                            value: e.algorithmID,
+                            groupValue: remoteSettings.defaultAlgorithm ?? 0,
+                            onChanged: (int? v) async {
+                              stillWaitingForRemoteServer.value = true;
+
+                              (await remoteServer.setDefaultAlgorithm(
+                                client_to_server.SetDefaultAlgorithm(
+                                    algorithmId: e.algorithmID),
+                              ))
+                                  .match(
+                                      onOk: (_) {
                                         if (context.mounted) {
                                           refresh(stillWaitingForRemoteServer,
                                               ref, context);
                                         }
-                                      } on Exception catch (e) {
+                                      },
+                                      onErr: (e) =>
+                                          showError(context, e.toString()));
+                            },
+                          ),
+                          trailing: IconButton(
+                            icon: Icon(Icons.delete),
+                            onPressed: remoteSettings.defaultAlgorithm ==
+                                    e.algorithmID
+                                ? null
+                                : () async {
+                                    (await remoteServer.removeAlgorithm(
+                                      client_to_server.RemoveAlgorithm(
+                                          algorithmId: e.algorithmName),
+                                    ))
+                                        .match(
+                                      onErr: (err) =>
+                                          showError(context, err.toString()),
+                                      onOk: (_) {
                                         if (context.mounted) {
-                                          showError(context, e.toString());
+                                          refresh(
+                                            stillWaitingForRemoteServer,
+                                            ref,
+                                            context,
+                                          );
                                         }
-                                      }
-                                    },
-                        ),
-                      ),
+                                      },
+                                    );
+                                  },
+                          ),
+                        );
+                      },
                     ),
                     SettingsTile(
                       title: Text('Add Algorithm'),
@@ -202,28 +207,27 @@ class SettingsScreen extends HookConsumerWidget {
                                   onPressed: i == 0
                                       ? null
                                       : () async {
-                                          try {
-                                            final res = await remoteServer
-                                                .removeLogin(e.loginId);
-                                            if (res != null && res != '') {
-                                              final resJson = jsonDecode(res);
-                                              resJson.keys.contains('err');
+                                          final res =
+                                              await remoteServer.removeLogin(
+                                            client_to_server.RemoveLogin(
+                                                loginId: e.loginId),
+                                          );
+                                          res.match(
+                                            onOk: (o) {
                                               if (context.mounted) {
-                                                showError(context,
-                                                    'Error: ${resJson['err']}');
+                                                refresh(
+                                                    stillWaitingForRemoteServer,
+                                                    ref,
+                                                    context);
                                               }
-                                            }
-                                            if (context.mounted) {
-                                              refresh(
-                                                  stillWaitingForRemoteServer,
-                                                  ref,
-                                                  context);
-                                            }
-                                          } on Exception catch (e) {
-                                            if (context.mounted) {
-                                              showError(context, e.toString());
-                                            }
-                                          }
+                                            },
+                                            onErr: (e) {
+                                              showError(
+                                                context,
+                                                e.toString(),
+                                              );
+                                            },
+                                          );
                                         },
                                 ),
                               );

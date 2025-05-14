@@ -61,6 +61,8 @@ dependencies:
   android_alarm_manager_plus: ^4.0.7
   permission_handler: ^12.0.0+1
   flutter_heatmap_calendar: ^1.0.5
+  protobuf: ^4.0.0
+  fixnum: ^1.1.1
 
 dev_dependencies:
   flutter_test:

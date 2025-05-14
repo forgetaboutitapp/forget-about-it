@@ -30,17 +30,4 @@ class RemoteAlgorithm with _$RemoteAlgorithm {
   final int version;
   @override
   final String algorithmName;
-
-  static RemoteAlgorithm fromJSON(dynamic m) {
-    return RemoteAlgorithm(
-      algorithmID: m['id'],
-      authorName: m['author-name'],
-      license: m['license'],
-      remoteURL: m['remote-url'],
-      downloadURL: m['download-url'],
-      timeAdded: m['time-added'],
-      version: m['version'],
-      algorithmName: m['algorithm-name'],
-    );
-  }
 }

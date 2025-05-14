@@ -62,3 +62,5 @@ algorithms-built/*
 **/*.exe
 
 .vscode
+
+**/protobufs-build

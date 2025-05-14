@@ -5,6 +5,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:http/http.dart' as http;
 import '../../data/keys.dart';
+import '../../fn/fn.dart';
 import '../../state/login.dart';
 import 'submit_type.dart';
 
@@ -54,19 +55,20 @@ class TokenLogin extends HookConsumerWidget {
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: LoginButton(
-              shouldEnable: tokenController.text.trim() != '' &&
-                  urlController.text.trim() != '',
-              remoteURLString: urlController.text,
-              toRun: (uri) async {
-                return await update(
-                  client,
-                  uri,
-                  Token(
-                    tokenController.text.trim(),
-                  ),
-                );
-              },
-            ),
+                shouldEnable: tokenController.text.trim() != '' &&
+                    urlController.text.trim() != '',
+                remoteURLString: urlController.text,
+                toRun: (uri) async {
+                  final v = await update(
+                    client,
+                    uri,
+                    Token(tokenController.text.trim()),
+                  );
+                  return switch (v) {
+                    Ok() => true,
+                    Err() => false,
+                  };
+                }),
           )
         ],
       ),

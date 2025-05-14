@@ -6,8 +6,9 @@ import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-
+import '../../fn/fn.dart';
 import '../../network/interfaces.dart';
+import '../../protobufs-build/client_to_server.pb.dart' as client_to_server;
 import 'models/uploaded_file_state.dart';
 
 class AddAlgorithm extends HookWidget {
@@ -17,7 +18,7 @@ class AddAlgorithm extends HookWidget {
     required this.filepicker,
     required this.algos,
   });
-  final FetchData remoteServer;
+  final FetchDataWithToken remoteServer;
   final GenericFilepicker filepicker;
   final ISet<RemoteAlgorithm>? algos;
 
@@ -90,60 +91,62 @@ class AddAlgorithm extends HookWidget {
                     final parsedJson = jsonDecode(data);
                     bool shouldUpload = true;
 
-                    try {
-                      final algoName = parsedJson['algorithm-name'];
-                      IMap<String, RemoteAlgorithm> names = IMap();
-                      final algosLocal = algos;
-                      if (algosLocal != null) {
-                        for (var element in algosLocal) {
-                          names = names.add(element.algorithmName, element);
-                        }
-                      }
-                      if (algoName is! String) {
-                        showError(context,
-                            'Algorithm name should be a string, not ${algoName.runtimeType}');
-                        return;
-                      }
-                      final String algoNameString = algoName;
-                      if (names.keys.contains(algoNameString)) {
-                        shouldUpload = await showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: Text('Warning'),
-                            content: Text(
-                              'You already have an algorithm with the name $algoNameString and has a version ${names.get(algoNameString)?.version}\n Do you want to overwright?',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop(true);
-                                },
-                                child: Text('Ok'),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop(false);
-                                },
-                                child: Text('Cancel'),
-                              )
-                            ],
-                          ),
-                        );
-                      }
-                      if (shouldUpload) {
-                        isUploading.value = true;
-                        final res = await remoteServer.uploadAlgorithm(data);
-                        if (res != null) {
-                          if (context.mounted) {
-                            showError(context, res);
+                    (await Result.doSafe(
+                      () async {
+                        final algoName = parsedJson['algorithm-name'];
+                        IMap<String, RemoteAlgorithm> names = IMap();
+                        final algosLocal = algos;
+                        if (algosLocal != null) {
+                          for (var element in algosLocal) {
+                            names = names.add(element.algorithmName, element);
                           }
                         }
-                      }
-                    } on Exception catch (e) {
-                      if (context.mounted) {
-                        showError(context, e.toString());
-                      }
-                    }
+                        if (algoName is! String) {
+                          showError(context,
+                              'Algorithm name should be a string, not ${algoName.runtimeType}');
+                          return;
+                        }
+                        final String algoNameString = algoName;
+                        if (names.keys.contains(algoNameString)) {
+                          shouldUpload = await showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: Text('Warning'),
+                              content: Text(
+                                'You already have an algorithm with the name $algoNameString and has a version ${names.get(algoNameString)?.version}\n Do you want to overwright?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop(true);
+                                  },
+                                  child: Text('Ok'),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop(false);
+                                  },
+                                  child: Text('Cancel'),
+                                )
+                              ],
+                            ),
+                          );
+                        }
+                        if (shouldUpload) {
+                          isUploading.value = true;
+                          (await remoteServer.uploadAlgorithm(
+                                  client_to_server.UploadAlgorithm(
+                                      algorithm: data)))
+                              .match(
+                                  onErr: (e) =>
+                                      showError(context, e.toString()),
+                                  onOk: (_) {});
+                        }
+                      },
+                    ))
+                        .match(
+                            onErr: (e) => showError(context, e.toString()),
+                            onOk: (_) {});
                     if (shouldUpload) {
                       isUploading.value = false;
                       if (context.mounted) {

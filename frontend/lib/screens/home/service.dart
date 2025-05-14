@@ -1,15 +1,16 @@
-import 'dart:convert';
-
 import 'package:app/network/interfaces.dart';
-import 'package:app/screens/home/model.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 
-Future<(IList<Tag>, bool)> getAllTags(FetchData fd) async {
-  final parsedVal = jsonDecode(await fd.getAllTags());
-  return (
-    (parsedVal['tag-set'] as List<dynamic>)
-        .map((e) => Tag.fromJson(e))
-        .toIList(),
-    parsedVal['can-run'] as bool
-  );
+import '../../fn/fn.dart';
+import '../../protobufs-build/client_to_server.pb.dart' as client_to_server;
+import 'model.dart' as model;
+
+Future<Result<(IList<model.Tag>, bool)>> getAllTags(
+    FetchDataWithToken fd) async {
+  return (await fd.getAllTags(client_to_server.GetAllTags())).map((e) => (
+        e.tags
+            .map((t) => model.Tag(tag: t.tag, totalQuestions: t.totalQuestions))
+            .toIList(),
+        e.canRun
+      ));
 }

@@ -1,5 +1,5 @@
 -- name: AddUser :exec
-INSERT INTO Users(user_id, role, created) VALUES(?, ?, ?);
+INSERT INTO Users(user_id, role, created, default_algorithm) VALUES(?, ?, ?, ?);
 
 -- name: AddLogin :exec
 INSERT INTO Logins(login_uuid, user_id, device_description, created, index_id) VALUES(?, ?, ?, ?, ?);
@@ -17,7 +17,7 @@ SELECT DISTINCT Users.user_id FROM Users JOIN Logins ON Logins.user_id = Users.u
 INSERT INTO Logs_Logins (login_uuid, current_time) VALUES (?, ?);
 
 -- name: CreateNewLogin :one
-INSERT INTO Logins (login_uuid, user_id, device_description, created) values (?, ?, ?, ?) returning login_uuid;
+INSERT INTO Logins (login_uuid, user_id, device_description, created, index_id) values (?, ?, ?, ?, ?) returning login_uuid;
 
 -- name: FindLoginIDByUser :many
 SELECT Logins.index_id, Logins.device_description, Logins.created, Logins.login_uuid, max(Logs_Logins.current_time) as lastUsed FROM Logins LEFT OUTER JOIN Logs_Logins ON Logins.login_uuid=Logs_Logins.login_uuid WHERE Logins.user_id=? GROUP BY Logins.device_description, Logins.login_uuid;
@@ -26,13 +26,13 @@ SELECT Logins.index_id, Logins.device_description, Logins.created, Logins.login_
 INSERT INTO Logs_Logins(login_uuid, current_time) VALUES(?, ?);
 
 -- name: GetAllQuestions :many
-SELECT questions.question_id, questions.question, questions.answer FROM questions WHERE questions.user_id=? AND questions.enabled = 1;
+SELECT questions.question_id, questions.memo_hint, questions.explanation, questions.question, questions.answer FROM questions WHERE questions.user_id=? AND questions.enabled = 1;
 
 -- name: GetTagsByQuestion :many
 SELECT tag FROM questions_to_tags WHERE question_id = ?;
 
 -- name: AddNewQuestion :exec
-INSERT INTO questions(question_id, user_id, question, answer, enabled) VALUES (?, ?, ?, ?, ?);
+INSERT INTO questions(question_id, user_id, question, answer, enabled, memo_hint, explanation) VALUES (?, ?, ?, ?, ?, ?, ?);
 
 -- name: AddNewTag :exec
 INSERT INTO questions_to_tags(question_id, tag) VALUES(?, ?);
@@ -41,7 +41,7 @@ INSERT INTO questions_to_tags(question_id, tag) VALUES(?, ?);
 DELETE FROM questions_to_tags WHERE questions_to_tags.question_id in (SELECT question_id FROM questions WHERE user_id = ?);
 
 -- name: UpdateQuestion :exec
-UPDATE questions SET question=?, answer=?, enabled=? WHERE question_id=?;
+UPDATE questions SET question=?, answer=?, memo_hint=?, explanation=?, enabled=? WHERE question_id=?;
 
 -- name: GetTagsByUser :many
 with tmpValue (id) as (SELECT question_id FROM QUESTIONS WHERE questions.user_id=?) select distinct tag from questions_to_tags, tmpValue where questions_to_tags.question_id=tmpValue.id;

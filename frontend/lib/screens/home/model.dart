@@ -14,8 +14,4 @@ class Tag with _$Tag {
 
   @override
   int totalQuestions;
-
-  static Tag fromJson(Map<String, dynamic> d) {
-    return Tag(tag: d['tag'], totalQuestions: d['num-questions']);
-  }
 }

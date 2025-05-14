@@ -1,12 +1,14 @@
-import 'dart:convert';
+import 'dart:developer' as developer;
 
+import 'package:app/network/network.dart';
+import 'package:app/protobufs-build/client_to_server.pb.dart';
 import 'package:app/screens/login/submit_type.dart';
 import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:http/http.dart' as http;
 import '../data/constants.dart';
-import '../network/network.dart';
+import '../fn/fn.dart';
 
 part 'login.freezed.dart';
 
@@ -17,20 +19,38 @@ sealed class LoginReturn with _$LoginReturn {
       _LoginReturnLoggedIn;
 }
 
-Future<bool> update(
-    http.Client client, Uri remoteUri, SubmitType submitType) async {
-  Map<String, dynamic> d = switch (submitType) {
-    TwelveWords(:final twelveWords) => {'twelve-words': twelveWords.toList()},
-    Token(:final token) => {'token': token},
+Future<Result<()>> update(
+  http.Client client,
+  Uri remoteUri,
+  SubmitType submitType,
+) async {
+  InsecureMessage d = switch (submitType) {
+    TwelveWords(:final twelveWords) => InsecureMessage(
+        getToken: GetToken(
+          twelveWords: twelveWords.toList(),
+        ),
+      ),
+    Token(:final token) => InsecureMessage(
+        getToken: GetToken(token: token),
+      ),
   };
-  final body = await RemoteServer.update(client, remoteUri, d);
-  Map<String, dynamic> json = jsonDecode(body);
-  if (!json.containsKey('token')) {
-    return false;
+  final remoteServer = RemoteServerWithoutToken(
+    remoteHost: remoteUri.toString(),
+    client: client,
+  );
+
+  final token = await remoteServer.getToken(d);
+  final res = switch (token) {
+    Ok(:final value) => (value.token, null),
+    Err(:final value) => (null, value),
+  };
+  if (res.$1 != null) {
+    final token = res.$1;
+    Hive.box(localSettingsHiveBox).put(localSettingsHiveLoginToken, token);
+    Hive.box(localSettingsHiveBox).put(localSettingsHiveRemoteHost,
+        '${remoteUri.scheme}://${remoteUri.host}:${remoteUri.port}');
+    return Ok(());
   }
-  Hive.box(localSettingsHiveBox)
-      .put(localSettingsHiveLoginToken, json['token']);
-  Hive.box(localSettingsHiveBox).put(localSettingsHiveRemoteHost,
-      '${remoteUri.scheme}://${remoteUri.host}:${remoteUri.port}');
-  return true;
+  developer.log('ret: $res');
+  return Err(res.$2!);
 }

@@ -9,6 +9,8 @@ class Flashcard with _$Flashcard {
     required this.id,
     required this.question,
     required this.answer,
+    required this.explanation,
+    required this.memoHint,
     required this.tags,
   });
   @override
@@ -18,23 +20,9 @@ class Flashcard with _$Flashcard {
   @override
   final String answer;
   @override
+  final String explanation;
+  @override
+  final String memoHint;
+  @override
   final IList<String> tags;
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'question': question,
-      'answer': answer,
-      'tags': tags.toList()
-    };
-  }
-
-  static Flashcard fromJson(Map<String, dynamic> data) {
-    int id = data['id'];
-    String question = data['question'];
-    String answer = data['answer'];
-    final tags = List<String>.from(data['tags']);
-    return Flashcard(
-        id: id, question: question, answer: answer, tags: tags.toIList());
-  }
 }

@@ -4,11 +4,12 @@ class LoginButton extends StatelessWidget {
   final bool shouldEnable;
   final String remoteURLString;
   final Future<bool> Function(Uri) toRun;
-  const LoginButton(
-      {super.key,
-      required this.shouldEnable,
-      required this.remoteURLString,
-      required this.toRun});
+  const LoginButton({
+    super.key,
+    required this.shouldEnable,
+    required this.remoteURLString,
+    required this.toRun,
+  });
 
   @override
   Widget build(BuildContext context) {

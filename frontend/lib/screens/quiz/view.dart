@@ -7,9 +7,12 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../fn/fn.dart';
+import '../general-display/show_error.dart';
+
 class QuizView extends HookConsumerWidget {
   static String location = '/quiz';
-  final FetchData remoteServer;
+  final FetchDataWithToken remoteServer;
   final Map<String, List<String>> tags;
   final bool isDarkMode;
   const QuizView({
@@ -51,33 +54,34 @@ class QuizView extends HookConsumerWidget {
       ),
       body: Center(
         child: switch (question) {
-          QuizQuestionStateWaiting() => CircularProgressIndicator(),
-          QuizQuestionStateNone() => Center(
-              child: Text('No questions available'),
-            ),
-          QuizQuestionStateError(:final exception) =>
-            ErrorScreen(exception: exception),
-          QuizQuestionStateData(
-            :final question,
-            :final answer,
-            :final id,
-            :final questionType,
-            :final dueCards,
-            :final nonDueCards,
-            :final newCards,
-          ) =>
-            DisplayQuestion(
-              remoteServer: remoteServer,
-              question: question,
-              answer: answer,
-              id: id,
-              questionType: questionType,
-              tagsSet: tagsSet,
-              isDarkMode: isDarkMode,
-              amountDueQuestions: dueCards,
-              amountNewQuestions: newCards,
-              amountNonDueQuestions: nonDueCards,
-            ),
+          Err(value: final exception) => ErrorScreen(exception: exception),
+          Ok(value: final v) => switch (v) {
+              QuizQuestionStateWaiting() => CircularProgressIndicator(),
+              QuizQuestionStateNone() => Center(
+                  child: Text('No questions available'),
+                ),
+              QuizQuestionStateData(
+                :final question,
+                :final answer,
+                :final id,
+                :final questionType,
+                :final dueCards,
+                :final nonDueCards,
+                :final newCards,
+              ) =>
+                DisplayQuestion(
+                  remoteServer: remoteServer,
+                  question: question,
+                  answer: answer,
+                  id: id,
+                  questionType: questionType,
+                  tagsSet: tagsSet,
+                  isDarkMode: isDarkMode,
+                  amountDueQuestions: dueCards,
+                  amountNewQuestions: newCards,
+                  amountNonDueQuestions: nonDueCards,
+                ),
+            },
         },
       ),
     );
@@ -94,16 +98,8 @@ class ErrorScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.red,
-          content: Text(
-            'Error: $exception',
-          ),
-        ),
-      ),
-    );
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => showError(context, exception.toString()));
     return Center(child: Text(''));
   }
 }
@@ -113,7 +109,7 @@ class DisplayQuestion extends HookConsumerWidget {
   final String answer;
   final int id;
   final ISet<String>? tagsSet;
-  final FetchData remoteServer;
+  final FetchDataWithToken remoteServer;
   final QuestionType questionType;
   final bool isDarkMode;
   final int amountNewQuestions;

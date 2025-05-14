@@ -8,30 +8,15 @@ class StatsData with _$StatsData {
   const StatsData({
     required this.heatmapData,
     required this.pastResults,
+    required this.futureUsage,
   });
   @override
   final IMap<DateTime, int> heatmapData;
   @override
   final IMap<DateTime, int> pastResults;
 
-  static StatsData fromJSON(Map<String, dynamic> m) {
-    Map<String, dynamic> heatmapDataMap =
-        m['heatmap-data'] as Map<String, dynamic>;
-    Map<String, dynamic> pastDataMap =
-        m['past-results'] as Map<String, dynamic>;
-    Map<DateTime, int> heatmapData = heatmapDataMap.map(
-      (i, e) => MapEntry(
-          toDay(DateTime.fromMillisecondsSinceEpoch(int.parse(i) * 1000)), e),
-    );
-    Map<DateTime, int> pastResults = pastDataMap.map(
-      (i, e) => MapEntry(
-          toDay(DateTime.fromMillisecondsSinceEpoch(int.parse(i) * 1000)), e),
-    );
-    return StatsData(
-      heatmapData: heatmapData.toIMap(),
-      pastResults: pastResults.toIMap(),
-    );
-  }
+  @override
+  final IMap<DateTime, int> futureUsage;
 }
 
 DateTime toDay(DateTime dateTime) =>

@@ -1,14 +1,13 @@
-package secure_test
+package do_test
 
 import (
 	"context"
 	"database/sql"
-	"log/slog"
-	"testing"
-
 	"github.com/forgetaboutitapp/forget-about-it/server"
 	dbUtils "github.com/forgetaboutitapp/forget-about-it/server/pkg/db_utils"
 	"github.com/forgetaboutitapp/forget-about-it/server/pkg/sql_queries"
+	"log/slog"
+	"testing"
 )
 
 func addUser(ctx context.Context, t *testing.T, q *sql_queries.Queries, userid int64) {
@@ -32,7 +31,7 @@ func addTag(ctx context.Context, t *testing.T, q *sql_queries.Queries, questioni
 	}
 }
 
-func Init(t *testing.T) (*sql_queries.Queries, *sql.DB) {
+func start(t *testing.T) (*sql_queries.Queries, *sql.DB) {
 	slog.SetLogLoggerLevel(slog.LevelError)
 	server.DBFilename = ":memory:"
 	q, db := dbUtils.GetDB()

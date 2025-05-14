@@ -1,5 +1,6 @@
 import 'package:app/network/interfaces.dart';
 
+import '../../../fn/fn.dart';
 import '../service.dart' as services;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -9,16 +10,16 @@ part 'stats.g.dart';
 
 @riverpod
 class Stats extends _$Stats {
-  StatsData? _cache;
+  Result<StatsData>? _cache;
   DateTime _originalDate = DateTime.now();
   DateTime _finalDate = DateTime.now();
   @override
-  StatsData? build() {
+  Result<StatsData>? build() {
     return _cache;
   }
 
   Future<void> getStats(
-      FetchData fd, DateTime initTime, DateTime endTime) async {
+      FetchDataWithToken fd, DateTime initTime, DateTime endTime) async {
     bool reset = false;
     if (_originalDate.isAfter(initTime)) {
       _originalDate = initTime;

@@ -1,4 +1,5 @@
 import 'package:app/bip39/wordlist.dart';
+import 'package:app/fn/fn.dart';
 import 'package:app/screens/login/submit_type.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter/foundation.dart';
@@ -132,23 +133,28 @@ class TwelveWordsForm extends HookConsumerWidget {
               8,
               MediaQuery.sizeOf(context).height > 550 ? 16 : 2),
           child: LoginButton(
-            shouldEnable: twelveWordHook.value
-                    .where(
-                      (w) =>
-                          w.trim().isNotEmpty &&
-                          WORDLIST.contains(
-                            w.toLowerCase(),
-                          ),
-                    )
-                    .length ==
-                12,
-            remoteURLString: urlController.value.text,
-            toRun: (uri) async => await update(
-              client,
-              uri,
-              TwelveWords(twelveWordHook.value),
-            ),
-          ),
+              shouldEnable: twelveWordHook.value
+                      .where(
+                        (w) =>
+                            w.trim().isNotEmpty &&
+                            WORDLIST.contains(
+                              w.toLowerCase(),
+                            ),
+                      )
+                      .length ==
+                  12,
+              remoteURLString: urlController.value.text,
+              toRun: (uri) async {
+                final v = await update(
+                  client,
+                  uri,
+                  TwelveWords(twelveWordHook.value),
+                );
+                return switch (v) {
+                  Ok() => true,
+                  Err() => false,
+                };
+              }),
         )
       ],
     );

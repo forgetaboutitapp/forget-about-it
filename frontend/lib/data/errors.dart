@@ -1,3 +1,12 @@
+class MyException implements Exception{
+  final bool shouldLogout;
+  final Exception inner;
+
+  MyException({required this.shouldLogout, required this.inner});
+
+  @override
+  String toString() => inner.toString();
+}
 class ServerException implements Exception {
   final int code;
 

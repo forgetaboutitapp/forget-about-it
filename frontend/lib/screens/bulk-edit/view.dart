@@ -1,14 +1,21 @@
-import 'package:app/data/errors.dart';
+import 'dart:developer' as developer;
+
+import 'package:app/future_widget/future_widget.dart';
 import 'package:app/network/interfaces.dart';
+import 'package:app/screens/general-display/show_error.dart';
+import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
+import '../../fn/fn.dart';
+import 'model.dart';
 import 'parse.dart';
 import 'service.dart';
 
 class BulkEditScreen extends HookWidget {
   static String location = '/bulk-edit';
-  final FetchData remoteServer;
+  final FetchDataWithToken remoteServer;
+
   const BulkEditScreen({
     super.key,
     required this.remoteServer,
@@ -17,111 +24,103 @@ class BulkEditScreen extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final future = useState(() async {
-      try {
-        final q = await getAllQuestions(remoteServer: remoteServer);
-        return q;
-      } on ServerException catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              backgroundColor: Colors.red,
-              content: Text('$e'),
-            ),
-          );
-        }
-      } on Exception catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              backgroundColor: Colors.red,
-              content: Text('Error: $e'),
-            ),
-          );
-        }
-      }
-      return null;
+      return await getAllQuestions(remoteServer: remoteServer);
     }());
+    developer.log('future: ${future.toString()}');
     return Scaffold(
       appBar: AppBar(title: Text('Edit')),
-      body: FutureBuilder(
+      body: FutureWidget(
         future: future.value,
-        builder: (context, snapshot) => switch (snapshot.connectionState) {
-          ConnectionState.none => Center(child: Text('Error')),
-          ConnectionState.waiting ||
-          ConnectionState.active =>
-            Center(child: CircularProgressIndicator()),
-          ConnectionState.done => displayWidget(context, snapshot, future),
-        },
+        built: (context, Result<String> r) => displayWidget(context, r, future),
+        waiting: (context) => Center(child: CircularProgressIndicator()),
       ),
     );
   }
 
-  Widget displayWidget(
-      BuildContext context, snapshot, ValueNotifier<Future<String?>> future) {
-    if (snapshot.hasError) {
-      WidgetsBinding.instance.addPostFrameCallback(
-        (_) => ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: Colors.red,
-            content: Text(
-              'Error ${snapshot.error}',
-            ),
+  Widget displayWidget(BuildContext context, Result<String> result,
+      ValueNotifier<Future<Result<String>>> future) {
+    developer.log('result: $result');
+    return MainBulkEditView(
+        text: switch (result) {
+          Ok(:final value) => value,
+          Err(:final value) => showErrorAndReturnEmptyString(context, value),
+        },
+        postQuestion: (text) async {
+          future.value = () async {
+            return switch (parse(text)) {
+              Ok(:final value) => showErrorAndReturnString(
+                  context,
+                  await runPostGetAllQuestions(value),
+                ),
+              Err(:final value) => showErrorAndReturnString(
+                  context,
+                  (Ok(text), value),
+                )
+            };
+          }();
+        });
+  }
+
+  Future<(Result<String>, Exception?)> runPostGetAllQuestions(
+      IList<Flashcard> r) async {
+    final Result<String> paqRes = switch (await (await postAllQuestions(
+      remoteServer: remoteServer,
+      flashcards: r,
+    ))
+        .doFlatMap(
+      (_) async => await getAllQuestions(
+        remoteServer: remoteServer,
+      ),
+    )) {
+      Ok(:final value) => Ok(value),
+      Err(:final value) => Err(value),
+    };
+    developer.log('paqRes: ${paqRes.toString()}');
+    return switch (paqRes) {
+      Ok(:final value) => (Ok(value), null),
+      Err(:final value) => (
+          await getAllQuestions(
+            remoteServer: remoteServer,
           ),
+          value
         ),
-      );
-      return Center(child: Text(''));
-    } else if (snapshot.hasData) {
-      return MainBulkEditView(
-          text: snapshot.data ?? '',
-          postQuestion: (text) async {
-            future.value = () async {
-              try {
-                final flashcards = parse(text);
-                await postAllQuestions(
-                  remoteServer: remoteServer,
-                  flashcards: flashcards,
-                );
-                return await getAllQuestions(remoteServer: remoteServer);
-              } on ServerException catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      backgroundColor: Colors.red,
-                      content: Text('$e'),
-                    ),
-                  );
-                }
-              } on Exception catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      backgroundColor: Colors.red,
-                      content: Text('Error: $e'),
-                    ),
-                  );
-                }
-              }
-              return text;
-            }();
-          });
-    } else {
-      return MainBulkEditView(
-        text: 'No Data Or Error',
-        postQuestion: (v) async {},
-      );
+    };
+  }
+
+  String showErrorAndReturnEmptyString(BuildContext context, Exception value) {
+    developer.log('in error: $value');
+    showErrorDelayed(context, value.toString());
+    return '';
+  }
+
+  Result<String> showErrorAndReturnString(
+    BuildContext context,
+    (Result<String>, Exception?) s,
+  ) {
+    if (s.$2 != null) {
+      showErrorDelayed(context, s.$2.toString());
     }
+    developer.log('s1:${s.$1}');
+    return s.$1;
   }
 }
 
 class MainBulkEditView extends HookWidget {
   final String text;
   final Future<void> Function(String post) postQuestion;
+
   const MainBulkEditView(
       {super.key, required this.text, required this.postQuestion});
 
   @override
   Widget build(BuildContext context) {
+    developer.log('text: $text');
     final controller = useTextEditingController(text: text);
+
+    useEffect(() {
+      controller.text = text;
+      return null;
+    });
     return Column(
       children: [
         Expanded(

@@ -16,7 +16,6 @@ import (
 	_ "modernc.org/sqlite"
 
 	"github.com/forgetaboutitapp/forget-about-it/server"
-	"github.com/forgetaboutitapp/forget-about-it/server/cmd/server/apis/secure"
 	"github.com/forgetaboutitapp/forget-about-it/server/pkg/sql_queries"
 )
 
@@ -86,7 +85,7 @@ func DoMigrations(ctx context.Context, db *sql.DB, originalVersion int) (int, er
 
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
-		return 0, errors.Join(secure.ErrCantInitTransaction, err)
+		panic(err)
 	}
 	defer tx.Rollback()
 	v := 0
@@ -111,8 +110,7 @@ func DoMigrations(ctx context.Context, db *sql.DB, originalVersion int) (int, er
 	}
 	err = tx.Commit()
 	if err != nil {
-		return 0, errors.Join(secure.ErrCantCommit, err)
-
+		panic(err)
 	}
 	return v, nil
 

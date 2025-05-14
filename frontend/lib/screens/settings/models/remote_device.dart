@@ -18,19 +18,4 @@ class RemoteDevice with _$RemoteDevice {
     required this.lastUsed,
     required this.loginId,
   });
-  factory RemoteDevice.fromJSON(dynamic json) {
-    final lastUsed = json['last-used'];
-    return RemoteDevice(
-      loginId: json['login-id'],
-      title: json['title'],
-      dateAdded: DateTime.fromMillisecondsSinceEpoch(
-        json['date-added'] * 1000,
-      ),
-      lastUsed: (lastUsed == null)
-          ? null
-          : DateTime.fromMillisecondsSinceEpoch(
-              lastUsed * 1000,
-            ),
-    );
-  }
 }

@@ -7,6 +7,7 @@ import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:hive_ce_flutter/adapters.dart';
 import 'package:http/http.dart' as http;
 
+import 'fn/fn.dart';
 import 'network/network.dart';
 
 @pragma('vm:entry-point')
@@ -18,21 +19,28 @@ void printHello() async {
   String? remoteHost = box.get(localSettingsHiveRemoteHost);
 
   if (token != null && remoteHost != null) {
-    FetchData f = RemoteServer(
+    FetchDataWithToken f = RemoteServer(
         remoteHost: remoteHost, token: token, client: http.Client());
-    try {
-      final tags = (await getAllTags(f)).$1;
-      final q = await getNextQuestion(f, tags.map((e) => e.tag).toISet());
-      if (q.dueCards > 0) {
+
+    final tagsResult =
+        await (await (await getAllTags(f)).doFlatMap((tags) async {
+      return await getNextQuestion(f, tags.$1.map((e) => e.tag).toISet());
+    }))
+            .doFlatMap((f) async {
+      if (f.dueCards > 0) {
         await NotificationService().showNotification(
             title: 'Flashcard reminder',
-            body: 'There are ${q.dueCards} cards that are due!');
+            body: 'There are ${f.dueCards} cards that are due!');
       }
-    } on Exception catch (e) {
-      await NotificationService().showNotification(
-        title: 'Error getting data',
-        body: 'Error: $e',
-      );
-    }
+      return Ok(());
+    });
+    tagsResult.doMatch(
+        onOk: (_) async {},
+        onErr: (e) async {
+          await NotificationService().showNotification(
+            title: 'Error getting data',
+            body: 'Error: $e',
+          );
+        });
   }
 }

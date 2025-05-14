@@ -17,17 +17,18 @@ class RemoteSettingsNotifier extends _$RemoteSettingsNotifier {
     }
   }
 
-  Future<Exception?> getData(FetchData remoteServer) async {
-    try {
-      final newState = await getRemoteSettings(remoteServer);
-
-      if (!_init || state != newState) {
-        state = newState;
+  Future<Exception?> getData(FetchDataWithToken remoteServer) async {
+    final newState = await getRemoteSettings(remoteServer);
+    Exception? returnVal;
+    newState.match(onErr: (err) {
+      returnVal = err;
+    }, onOk: (ok) {
+      if (!_init || state != ok) {
+        state = ok;
         _init = true;
       }
-    } on Exception catch (e) {
-      return e;
-    }
-    return null;
+    });
+
+    return returnVal;
   }
 }
