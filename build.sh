@@ -1,6 +1,7 @@
 #/bin/sh
 set -e
 pwd
+maindir=$(pwd)
 go run ./generate.go
 cd frontend
 dart run build_runner build -d
@@ -24,9 +25,9 @@ sqlc generate
 echo "finished sqlc"
 pwd
 #go test ./...
-mkdir /home/runner/work/forget-about-it/forget-about-it/server/web -p
-cp /home/runner/work/forget-about-it/forget-about-it/frontend/build/web ../server -rf
-cd /home/runner/work/forget-about-it/forget-about-it/server
+mkdir "$maindir"/server/web -p
+cp "$maindir"/frontend/build/web ../server -rf
+cd "$maindir"/server
 for os in linux windows freebsd openbsd darwin; do
   for arch in arm64 amd64; do
     mkdir -p  "$1"/tmp-release/${os}-${arch}
@@ -34,10 +35,11 @@ for os in linux windows freebsd openbsd darwin; do
     if [ "$os" == "windows" ]; then
       ext=".exe"
     fi
+    echo building $os $arch provision
     GOOS=$os GOARCH=$arch go build --ldflags '-extldflags "-static"' -o "$1"/tmp-release/forget-about-it-$os-$arch/provision${ext} ./cmd/provision
   done
 done
-cd /home/runner/work/forget-about-it/forget-about-it/server
+cd "$maindir"/server
 
 for os in linux windows freebsd openbsd darwin; do
   for arch in arm64 amd64; do
@@ -45,6 +47,7 @@ for os in linux windows freebsd openbsd darwin; do
     if [ "$os" == "windows" ]; then
       ext=".exe"
     fi
+    echo building $os $arch server
     GOOS=$os GOARCH=$arch go build --ldflags '-extldflags "-static"' -o "$1"/tmp-release/forget-about-it-$os-$arch/server${ext} ./cmd/server
   done
 done
@@ -59,8 +62,7 @@ for os in linux windows freebsd openbsd darwin; do
     fi
   done
 done
-cd /home/runner/work/forget-about-it/forget-about-it/frontend
-mkdir "$1"/releases
+cd "$maindir"/frontend
 ls build
 ls build/app
 ls build/app/outputs
