@@ -10,9 +10,14 @@ ls -lha
 go run ./generate.go
 cd ./frontend
 flutter build web --release
+echo "finished building"
 mkdir ../server/web -p
+echo "finished mkdir"
 cp ./build/web ../server/web -rf
-cd ../
-cd server
-
+echo "finished copying"
+cd ../server
+echo "finished cd"
+pwd
+ls
 sqlc generate
+echo "finished sqlc"
