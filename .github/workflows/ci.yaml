@@ -41,17 +41,9 @@ jobs:
           cd forget-about-it
           just
           go test ./...
-
-      - name: Clone repository
-        uses: actions/checkout@v4
-      - name: Run Flutter tests
-        run: |
+          cd ../
           cd frontend
-          flutter pub get
-          flutter config --no-analytics
-          dart pub run build_runner build -d
           flutter test
-
 
   build:
     runs-on: ubuntu-latest
@@ -84,16 +76,12 @@ jobs:
           cd ..
           cd forget-about-it
           just
+          go test ./...
           cd frontend
-          dart run build_runner build -d
           flutter build web --release
           mkdir ../server/web -p
           cp ./build/web ../server -rf
-          cd ../
-          go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
-          cd server
-
-          sqlc generate
+          /home/runner/work/forget-about-it/forget-about-it/server
           for os in linux windows freebsd openbsd darwin; do
             for arch in arm64 amd64; do
               mkdir -p  ${{ github.workspace }}/tmp-release/${os}-${arch}
@@ -104,9 +92,7 @@ jobs:
               GOOS=$os GOARCH=$arch go build --ldflags '-extldflags "-static"' -o ${{ github.workspace }}/tmp-release/forget-about-it-$os-$arch/provision${ext} ./cmd/provision
             done
           done
-      - name: Build server app
-        run: |
-          cd server
+          /home/runner/work/forget-about-it/forget-about-it/server
 
           for os in linux windows freebsd openbsd darwin; do
             for arch in arm64 amd64; do
@@ -128,6 +114,14 @@ jobs:
               fi
             done
           done
+          cd /home/runner/work/forget-about-it/forget-about-it/frontend
+          flutter build apk --release
+          mkdir ${{ github.workspace }}/releases
+          ls build
+          ls build/app
+          ls build/app/outputs
+          ls build/app/outputs/flutter-apk/
+          mv build/app/outputs/flutter-apk/app-release.apk ${{ github.workspace }}/releases/forget-about-it.apk
       - name: Upload release artifacts
         uses: softprops/action-gh-release@v2
         with:
@@ -149,14 +143,7 @@ jobs:
       - name: Build Flutter application for Android
         run: |
           cd frontend
-          dart run build_runner build -d
-          flutter build apk --release
-          mkdir ${{ github.workspace }}/releases
-          ls build
-          ls build/app
-          ls build/app/outputs
-          ls build/app/outputs/flutter-apk/
-          mv build/app/outputs/flutter-apk/app-release.apk ${{ github.workspace }}/releases/forget-about-it.apk
+
       - name: Upload release artifacts
         uses: softprops/action-gh-release@v2
         with:
