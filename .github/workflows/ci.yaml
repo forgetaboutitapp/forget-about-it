@@ -39,9 +39,8 @@ jobs:
           just
           cd ..
           cd forget-about-it
-          just
-          go test ./...
-          cd ../
+          chmod +x build.sh
+          ./build.sh "${{ github.workspace }}"
           cd frontend
           flutter test
 
@@ -74,50 +73,9 @@ jobs:
           cd protobufs
           just
           cd ..
-          cd forget-about-it/server
-          just
-          pwd
-          echo "about to do full build"
-          cd /home/runner/work/forget-about-it/forget-about-it/server
-          for os in linux windows freebsd openbsd darwin; do
-            for arch in arm64 amd64; do
-              mkdir -p  ${{ github.workspace }}/tmp-release/${os}-${arch}
-              ext=""
-              if [ "$os" == "windows" ]; then
-                ext=".exe"
-              fi
-              GOOS=$os GOARCH=$arch go build --ldflags '-extldflags "-static"' -o ${{ github.workspace }}/tmp-release/forget-about-it-$os-$arch/provision${ext} ./cmd/provision
-            done
-          done
-          cd /home/runner/work/forget-about-it/forget-about-it/server
-
-          for os in linux windows freebsd openbsd darwin; do
-            for arch in arm64 amd64; do
-              ext=""
-              if [ "$os" == "windows" ]; then
-                ext=".exe"
-              fi
-              GOOS=$os GOARCH=$arch go build --ldflags '-extldflags "-static"' -o ${{ github.workspace }}/tmp-release/forget-about-it-$os-$arch/server${ext} ./cmd/server
-            done
-          done
-          mkdir -p ${{ github.workspace }}/releases/
-          cd ${{ github.workspace }}/tmp-release/
-          for os in linux windows freebsd openbsd darwin; do
-            for arch in arm64 amd64; do
-              if [ "$os" == "windows" ]; then
-                  zip -r ${{ github.workspace }}/releases/forget-about-it-${os}-${arch}.zip forget-about-it-$os-$arch
-              else
-                tar -czvf ${{ github.workspace }}/releases/forget-about-it-${os}-${arch}.tar.gz forget-about-it-$os-$arch
-              fi
-            done
-          done
-          cd /home/runner/work/forget-about-it/forget-about-it/frontend
-          mkdir ${{ github.workspace }}/releases
-          ls build
-          ls build/app
-          ls build/app/outputs
-          ls build/app/outputs/flutter-apk/
-          mv build/app/outputs/flutter-apk/app-release.apk ${{ github.workspace }}/releases/forget-about-it.apk
+          cd forget-about-it
+          chmod +x build.sh
+          ./build.sh "${{ github.workspace }}"
       - name: Upload release artifacts
         uses: softprops/action-gh-release@v2
         with:
