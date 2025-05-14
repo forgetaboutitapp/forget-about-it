@@ -26,6 +26,16 @@ jobs:
           flutter-version: 3.29.0
       - name: Run Go tests
         run: |
+          pwd
+          cd ..
+          git clone  --depth 1 https://github.com/forgetaboutitapp/protobufs
+          sudo apt-get install -y protobuf-compiler
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest    
+          sudo apt install just
+          cd protobufs
+          just
+          cd ..
+          cd forget-about-it
           cd frontend
           dart run build_runner build -d
           flutter build web --release
