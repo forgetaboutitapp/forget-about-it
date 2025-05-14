@@ -37,6 +37,7 @@ jobs:
           just
           cd ..
           cd forget-about-it
+          go run ./generate.go
           cd frontend
           dart run build_runner build -d
           flutter build web --release
