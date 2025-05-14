@@ -70,6 +70,20 @@ jobs:
           go-version: '1.24'  # Change to your desired Go version
       - name: Build provisioning app
         run: |
+          pwd
+          cd ..
+          git clone  --depth 1 https://github.com/forgetaboutitapp/protobufs
+          sudo apt-get install -y protobuf-compiler
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest    
+          sudo apt install just
+          dart pub global activate protoc_plugin
+          go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+
+          cd protobufs
+          just
+          cd ..
+          cd forget-about-it
+          just
           cd frontend
           dart run build_runner build -d
           flutter build web --release
