@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:app/screens/general-display/show_error.dart';
-import 'package:app/screens/settings/models/remote_algorithm.dart';
+import '../../screens/general-display/show_error.dart';
+import '../../screens/settings/models/remote_algorithm.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';

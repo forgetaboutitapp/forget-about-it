@@ -1,6 +1,6 @@
-import 'package:app/bip39/wordlist.dart';
-import 'package:app/fn/fn.dart';
-import 'package:app/screens/login/submit_type.dart';
+import '../../bip39/wordlist.dart';
+import '../../fn/fn.dart';
+import '../../screens/login/submit_type.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';

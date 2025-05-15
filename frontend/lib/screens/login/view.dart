@@ -1,9 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_zxing/flutter_zxing.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:app/interop/get_url.dart';
+import '../../interop/get_url.dart';
 import 'package:http/http.dart' as http;
 
 import 'token_login.dart';
@@ -93,26 +91,6 @@ class LoginScreen extends HookConsumerWidget {
           ),
         ),
       ),
-    );
-  }
-
-  Column getCamera(void Function(Code) callback) {
-    return Column(
-      children: [
-        Center(
-          child: SizedBox(
-            width: 400,
-            height: 400,
-            child: Center(
-              child: kIsWeb
-                  ? Text('Camera does not work on the browser')
-                  : ReaderWidget(
-                      onScan: callback,
-                    ),
-            ),
-          ),
-        )
-      ],
     );
   }
 }

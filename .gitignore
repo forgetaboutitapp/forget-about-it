@@ -64,3 +64,4 @@ algorithms-built/*
 .vscode
 
 **/protobufs-build
+frontend/dist/**

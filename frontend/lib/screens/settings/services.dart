@@ -1,7 +1,6 @@
-import 'package:app/protobufs-build/client_to_server.pb.dart'
-    as client_to_server;
-import 'package:app/protobufs-build/server_to_client.pb.dart';
-import 'package:app/screens/settings/models/remote_algorithm.dart';
+import '../../protobufs-build/client_to_server.pb.dart' as client_to_server;
+import '../../protobufs-build/server_to_client.pb.dart';
+import '../../screens/settings/models/remote_algorithm.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 
 import '../../fn/fn.dart';

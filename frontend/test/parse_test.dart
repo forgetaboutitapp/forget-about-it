@@ -1,6 +1,6 @@
-import 'package:app/fn/fn.dart';
-import 'package:app/screens/bulk-edit/model.dart';
-import 'package:app/screens/bulk-edit/parse.dart';
+import 'package:forget_about_it/fn/fn.dart';
+import 'package:forget_about_it/screens/bulk-edit/model.dart';
+import 'package:forget_about_it/screens/bulk-edit/parse.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter_test/flutter_test.dart';
 

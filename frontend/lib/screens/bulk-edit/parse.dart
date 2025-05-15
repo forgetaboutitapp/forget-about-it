@@ -1,6 +1,6 @@
 import 'dart:collection';
 
-import 'package:app/screens/bulk-edit/model.dart';
+import '../../screens/bulk-edit/model.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter/material.dart';
 

@@ -1,11 +1,9 @@
-import 'package:app/fn/fn.dart';
-import 'package:app/network/interfaces.dart';
-import 'package:app/protobufs-build/client_to_server.pb.dart'
-    as client_to_server;
-import 'package:app/protobufs-build/server_to_client.pb.dart'
-    as server_to_client;
-import 'package:app/screens/bulk-edit/model.dart';
-import 'package:app/screens/bulk-edit/parse.dart';
+import '../../fn/fn.dart';
+import '../../network/interfaces.dart';
+import '../../protobufs-build/client_to_server.pb.dart' as client_to_server;
+import '../../protobufs-build/server_to_client.pb.dart' as server_to_client;
+import '../../screens/bulk-edit/model.dart';
+import '../../screens/bulk-edit/parse.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 
 import 'model.dart' as model;

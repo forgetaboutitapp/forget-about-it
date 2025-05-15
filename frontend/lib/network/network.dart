@@ -1,12 +1,10 @@
 import 'dart:core';
 import 'dart:developer' as developer;
 
-import 'package:app/data/errors.dart';
-import 'package:app/network/interfaces.dart';
-import 'package:app/protobufs-build/client_to_server.pb.dart'
-    as client_to_server;
-import 'package:app/protobufs-build/server_to_client.pb.dart'
-    as server_to_client;
+import '../data/errors.dart';
+import '../network/interfaces.dart';
+import '../protobufs-build/client_to_server.pb.dart' as client_to_server;
+import '../protobufs-build/server_to_client.pb.dart' as server_to_client;
 
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart' as client;

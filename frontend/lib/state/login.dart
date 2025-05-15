@@ -1,8 +1,8 @@
 import 'dart:developer' as developer;
 
-import 'package:app/network/network.dart';
-import 'package:app/protobufs-build/client_to_server.pb.dart';
-import 'package:app/screens/login/submit_type.dart';
+import '../../network/network.dart';
+import '../../protobufs-build/client_to_server.pb.dart';
+import '../../screens/login/submit_type.dart';
 import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:hive_ce/hive.dart';

@@ -2,12 +2,12 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
-import 'package:app/data/constants.dart';
-import 'package:app/interop/get_url.dart';
-import 'package:app/network/interfaces.dart';
-import 'package:app/screens/bulk-edit/view.dart';
-import 'package:app/screens/quiz/view.dart';
-import 'package:app/service.dart';
+import '../../data/constants.dart';
+import '../../interop/get_url.dart';
+import '../../network/interfaces.dart';
+import '../../screens/bulk-edit/view.dart';
+import '../../screens/quiz/view.dart';
+import '../../service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';

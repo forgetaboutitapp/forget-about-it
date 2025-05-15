@@ -1,9 +1,9 @@
 import 'dart:developer' as developer;
 
-import 'package:app/network/interfaces.dart';
-import 'package:app/screens/general-display/show_error.dart';
-import 'package:app/screens/stats/models/stats.dart';
-import 'package:app/screens/stats/models/stats_data.dart';
+import '../../network/interfaces.dart';
+import '../../screens/general-display/show_error.dart';
+import '../../screens/stats/models/stats.dart';
+import '../../screens/stats/models/stats_data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_heatmap_calendar/flutter_heatmap_calendar.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';

@@ -1,9 +1,9 @@
-import 'package:app/future_widget/future_widget.dart';
-import 'package:app/network/interfaces.dart';
-import 'package:app/screens/bulk-edit/view.dart';
-import 'package:app/screens/general-display/show_error.dart';
-import 'package:app/screens/home/model.dart';
-import 'package:app/screens/quiz/view.dart';
+import '../../future_widget/future_widget.dart';
+import '../../network/interfaces.dart';
+import '../../screens/bulk-edit/view.dart';
+import '../../screens/general-display/show_error.dart';
+import '../../screens/home/model.dart';
+import '../../screens/quiz/view.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';

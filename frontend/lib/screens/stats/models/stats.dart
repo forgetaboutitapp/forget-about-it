@@ -1,4 +1,4 @@
-import 'package:app/network/interfaces.dart';
+import '../../../network/interfaces.dart';
 
 import '../../../fn/fn.dart';
 import '../service.dart' as services;

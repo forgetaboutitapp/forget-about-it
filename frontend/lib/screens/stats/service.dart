@@ -1,10 +1,9 @@
 import 'dart:developer' as developer;
 
-import 'package:app/fn/fn.dart';
-import 'package:app/protobufs-build/client_to_server.pb.dart'
-    as client_to_server;
-import 'package:app/protobufs-build/google/protobuf/timestamp.pb.dart';
-import 'package:app/screens/stats/models/stats_data.dart';
+import '../../fn/fn.dart';
+import '../../protobufs-build/client_to_server.pb.dart' as client_to_server;
+import '../../protobufs-build/google/protobuf/timestamp.pb.dart';
+import '../../screens/stats/models/stats_data.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:fixnum/fixnum.dart';
 

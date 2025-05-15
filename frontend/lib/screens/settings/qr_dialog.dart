@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:app/network/interfaces.dart';
-import 'package:app/screens/login/view.dart';
+import '../../network/interfaces.dart';
+import '../../screens/login/view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:qr_flutter/qr_flutter.dart';

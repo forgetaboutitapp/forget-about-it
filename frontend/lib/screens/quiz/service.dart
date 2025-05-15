@@ -1,5 +1,5 @@
-import 'package:app/network/interfaces.dart';
-import 'package:app/screens/quiz/model.dart';
+import '../../network/interfaces.dart';
+import '../../screens/quiz/model.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 
 import '../../fn/fn.dart';

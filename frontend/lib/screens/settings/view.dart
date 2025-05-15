@@ -1,13 +1,12 @@
 import 'dart:async';
 import 'dart:developer' as dev;
 
-import 'package:app/network/interfaces.dart';
-import 'package:app/protobufs-build/client_to_server.pb.dart'
-    as client_to_server;
-import 'package:app/screens/general-display/show_error.dart';
-import 'package:app/screens/settings/add_algorithm.dart';
-import 'package:app/screens/settings/models/model.dart';
-import 'package:app/screens/settings/qr_dialog.dart';
+import '../../network/interfaces.dart';
+import '../../protobufs-build/client_to_server.pb.dart' as client_to_server;
+import '../../screens/general-display/show_error.dart';
+import '../../screens/settings/add_algorithm.dart';
+import '../../screens/settings/models/model.dart';
+import '../../screens/settings/qr_dialog.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
