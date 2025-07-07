@@ -42,11 +42,7 @@ void main() async {
     );
   }
 
-  runApp(
-    ProviderScope(
-      child: MainApp(),
-    ),
-  );
+  runApp(ProviderScope(child: MainApp()));
 }
 
 class MainApp extends HookConsumerWidget {
@@ -66,51 +62,52 @@ class MainApp extends HookConsumerWidget {
     routes: [
       GoRoute(
         path: HomeScreen.location,
-        builder: (context, state) => HomeScreen(
-          remoteServer: _getRemoteServer(),
-        ),
+        builder:
+            (context, state) => HomeScreen(remoteServer: _getRemoteServer()),
       ),
       GoRoute(
         path: BulkEditScreen.location,
-        builder: (context, state) => BulkEditScreen(
-          remoteServer: _getRemoteServer(),
-        ),
+        builder:
+            (context, state) =>
+                BulkEditScreen(remoteServer: _getRemoteServer()),
       ),
       GoRoute(
         path: LoginScreen.location,
-        builder: (context, state) => LoginScreen(
-          client: http.Client(),
-        ),
+        builder: (context, state) => LoginScreen(client: http.Client()),
       ),
       GoRoute(
         path: Stats.location,
-        builder: (context, state) => Stats(
-          remoteServer: _getRemoteServer(),
-        ),
+        builder: (context, state) => Stats(remoteServer: _getRemoteServer()),
       ),
       GoRoute(
         path: QuizView.location,
-        builder: (context, state) => QuizView(
-          remoteServer: _getRemoteServer(),
-          tags: state.uri.queryParametersAll,
-          isDarkMode: Hive.box(localSettingsHiveBox)
-              .get(localSettingsHiveDarkTheme, defaultValue: false),
-        ),
+        builder:
+            (context, state) => QuizView(
+              remoteServer: _getRemoteServer(),
+              tags: state.uri.queryParametersAll,
+              isDarkMode: Hive.box(
+                localSettingsHiveBox,
+              ).get(localSettingsHiveDarkTheme, defaultValue: false),
+            ),
       ),
       GoRoute(
         path: SettingsScreen.location,
-        builder: (context, state) => SettingsScreen(
-          filepicker: RealFilepicker(),
-          remoteServer: _getRemoteServer(),
-          curDarkMode: Hive.box(localSettingsHiveBox)
-              .get(localSettingsHiveDarkTheme, defaultValue: false),
-          switchDarkMode: (_) async {
-            final v = Hive.box(localSettingsHiveBox)
-                .get(localSettingsHiveDarkTheme, defaultValue: false);
-            await Hive.box(localSettingsHiveBox)
-                .put(localSettingsHiveDarkTheme, !v);
-          },
-        ),
+        builder:
+            (context, state) => SettingsScreen(
+              filepicker: RealFilepicker(),
+              remoteServer: _getRemoteServer(),
+              curDarkMode: Hive.box(
+                localSettingsHiveBox,
+              ).get(localSettingsHiveDarkTheme, defaultValue: false),
+              switchDarkMode: (_) async {
+                final v = Hive.box(
+                  localSettingsHiveBox,
+                ).get(localSettingsHiveDarkTheme, defaultValue: false);
+                await Hive.box(
+                  localSettingsHiveBox,
+                ).put(localSettingsHiveDarkTheme, !v);
+              },
+            ),
       ),
     ],
   );
@@ -119,31 +116,37 @@ class MainApp extends HookConsumerWidget {
     return RemoteServer(
       client: http.Client(),
       token: Hive.box(localSettingsHiveBox).get(localSettingsHiveLoginToken),
-      remoteHost:
-          Hive.box(localSettingsHiveBox).get(localSettingsHiveRemoteHost),
+      remoteHost: Hive.box(
+        localSettingsHiveBox,
+      ).get(localSettingsHiveRemoteHost),
     );
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ValueListenableBuilder(
-        valueListenable: Hive.box(localSettingsHiveBox).listenable(),
-        builder: (context, settingsBox, w) {
-          return MaterialApp.router(
-            debugShowCheckedModeBanner: false,
-            routerConfig: router,
-            theme: settingsBox.get(localSettingsHiveDarkTheme) == true
-                ? ThemeData.dark(useMaterial3: true)
-                : ThemeData.light(useMaterial3: true),
-          );
-        });
+      valueListenable: Hive.box(localSettingsHiveBox).listenable(),
+      builder: (context, settingsBox, w) {
+        return MaterialApp.router(
+          debugShowCheckedModeBanner: false,
+          routerConfig: router,
+          theme:
+              settingsBox.get(localSettingsHiveDarkTheme) == true
+                  ? ThemeData.dark(useMaterial3: true)
+                  : ThemeData.light(useMaterial3: true),
+        );
+      },
+    );
   }
 }
 
 class RealFilepicker extends GenericFilepicker {
   @override
-  Future<FilePickerResult?> pickFile(
-          {required FileType type, required List<String> allowedExtensions}) =>
-      FilePicker.platform
-          .pickFiles(type: type, allowedExtensions: allowedExtensions);
+  Future<FilePickerResult?> pickFile({
+    required FileType type,
+    required List<String> allowedExtensions,
+  }) => FilePicker.platform.pickFiles(
+    type: type,
+    allowedExtensions: allowedExtensions,
+  );
 }
