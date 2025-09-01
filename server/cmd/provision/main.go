@@ -74,7 +74,7 @@ func AddUser(q *sql_queries.Queries) (string, string, error) {
 		LoginUuid:         loginUuid.String(),
 		UserID:            userid,
 		DeviceDescription: "Initial Device",
-		Created:           time.Now().Unix(),
+		Created:           time.Now().UTC().Unix(),
 		IndexID:           int64(mathrand.Uint32()),
 	})
 	mnemonic, err := uuidUtils.NewMnemonicFromUuid(loginUuid)
@@ -92,7 +92,7 @@ func AddLogin(ctx context.Context, q *sql_queries.Queries, id int64) (string, st
 		LoginUuid:         newLoginUuid.String(),
 		UserID:            id,
 		DeviceDescription: fmt.Sprintf("Added on %s", time.Now().UTC().Format(time.DateTime)),
-		Created:           time.Now().Unix(),
+		Created:           time.Now().UTC().Unix(),
 		IndexID:           int64(mathrand.Uint32()),
 	})
 	m, err := uuidUtils.NewMnemonicFromUuid(newLoginUuid)

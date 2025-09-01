@@ -12,7 +12,7 @@ pwd
 ls -lha
 go run ./generate.go
 cd ./frontend
-flutter build web --release
+flutter build web --release --wasm
 flutter build apk --release
 echo "finished building"
 mkdir ../server/web -p

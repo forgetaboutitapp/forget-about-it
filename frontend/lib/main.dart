@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
+import 'package:toastification/toastification.dart';
 import '../../data/constants.dart';
 import '../../interop/get_url.dart';
 import '../../network/interfaces.dart';
@@ -62,14 +63,13 @@ class MainApp extends HookConsumerWidget {
     routes: [
       GoRoute(
         path: HomeScreen.location,
-        builder:
-            (context, state) => HomeScreen(remoteServer: _getRemoteServer()),
+        builder: (context, state) =>
+            HomeScreen(remoteServer: _getRemoteServer()),
       ),
       GoRoute(
         path: BulkEditScreen.location,
-        builder:
-            (context, state) =>
-                BulkEditScreen(remoteServer: _getRemoteServer()),
+        builder: (context, state) =>
+            BulkEditScreen(remoteServer: _getRemoteServer()),
       ),
       GoRoute(
         path: LoginScreen.location,
@@ -81,33 +81,31 @@ class MainApp extends HookConsumerWidget {
       ),
       GoRoute(
         path: QuizView.location,
-        builder:
-            (context, state) => QuizView(
-              remoteServer: _getRemoteServer(),
-              tags: state.uri.queryParametersAll,
-              isDarkMode: Hive.box(
-                localSettingsHiveBox,
-              ).get(localSettingsHiveDarkTheme, defaultValue: false),
-            ),
+        builder: (context, state) => QuizView(
+          remoteServer: _getRemoteServer(),
+          tags: state.uri.queryParametersAll,
+          isDarkMode: Hive.box(
+            localSettingsHiveBox,
+          ).get(localSettingsHiveDarkTheme, defaultValue: false),
+        ),
       ),
       GoRoute(
         path: SettingsScreen.location,
-        builder:
-            (context, state) => SettingsScreen(
-              filepicker: RealFilepicker(),
-              remoteServer: _getRemoteServer(),
-              curDarkMode: Hive.box(
-                localSettingsHiveBox,
-              ).get(localSettingsHiveDarkTheme, defaultValue: false),
-              switchDarkMode: (_) async {
-                final v = Hive.box(
-                  localSettingsHiveBox,
-                ).get(localSettingsHiveDarkTheme, defaultValue: false);
-                await Hive.box(
-                  localSettingsHiveBox,
-                ).put(localSettingsHiveDarkTheme, !v);
-              },
-            ),
+        builder: (context, state) => SettingsScreen(
+          filepicker: RealFilepicker(),
+          remoteServer: _getRemoteServer(),
+          curDarkMode: Hive.box(
+            localSettingsHiveBox,
+          ).get(localSettingsHiveDarkTheme, defaultValue: false),
+          switchDarkMode: (_) async {
+            final v = Hive.box(
+              localSettingsHiveBox,
+            ).get(localSettingsHiveDarkTheme, defaultValue: false);
+            await Hive.box(
+              localSettingsHiveBox,
+            ).put(localSettingsHiveDarkTheme, !v);
+          },
+        ),
       ),
     ],
   );
@@ -127,13 +125,14 @@ class MainApp extends HookConsumerWidget {
     return ValueListenableBuilder(
       valueListenable: Hive.box(localSettingsHiveBox).listenable(),
       builder: (context, settingsBox, w) {
-        return MaterialApp.router(
-          debugShowCheckedModeBanner: false,
-          routerConfig: router,
-          theme:
-              settingsBox.get(localSettingsHiveDarkTheme) == true
-                  ? ThemeData.dark(useMaterial3: true)
-                  : ThemeData.light(useMaterial3: true),
+        return ToastificationWrapper(
+          child: MaterialApp.router(
+            debugShowCheckedModeBanner: false,
+            routerConfig: router,
+            theme: settingsBox.get(localSettingsHiveDarkTheme) == true
+                ? ThemeData.dark(useMaterial3: true)
+                : ThemeData.light(useMaterial3: true),
+          ),
         );
       },
     );
@@ -145,8 +144,9 @@ class RealFilepicker extends GenericFilepicker {
   Future<FilePickerResult?> pickFile({
     required FileType type,
     required List<String> allowedExtensions,
-  }) => FilePicker.platform.pickFiles(
-    type: type,
-    allowedExtensions: allowedExtensions,
-  );
+  }) =>
+      FilePicker.platform.pickFiles(
+        type: type,
+        allowedExtensions: allowedExtensions,
+      );
 }

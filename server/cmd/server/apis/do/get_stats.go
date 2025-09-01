@@ -27,7 +27,7 @@ func GetStats(ctx context.Context, userid int64, token string, s Server, arg *cl
 
 	futureResults := map[string]int{}
 	for i := range 100 {
-		futureResults[strconv.FormatInt(time.Now().Unix()+int64(i*60*60*24), 10)] = 100 - i
+		futureResults[strconv.FormatInt(time.Now().UTC().Unix()+int64(i*60*60*24), 10)] = 100 - i
 	}
 
 	pastResults := map[uint64]float64{}

@@ -1,3 +1,5 @@
+import 'package:toastification/toastification.dart';
+
 import '../../data/errors.dart';
 import '../../network/interfaces.dart';
 import '../../screens/quiz/model.dart';
@@ -33,7 +35,7 @@ class QuizView extends HookConsumerWidget {
         try {
           ref
               .read(quizQuestionsProvider.notifier)
-              .getNextQuestion(remoteServer, tagsSet);
+              .getNextQuestion(remoteServer, tagsSet, false);
         } on ServerException catch (e) {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -132,6 +134,8 @@ class DisplayQuestion extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final shouldShowQuestion = useState(true);
+    final forceNewQuestion = useState(false);
+
     return Padding(
       padding: const EdgeInsets.all(1.0),
       child: Container(
@@ -232,12 +236,18 @@ class DisplayQuestion extends HookConsumerWidget {
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: ElevatedButton(
-                          onPressed: () {
+                          onPressed: () async {
                             try {
-                              ref
+                              var p = await ref
                                   .read(quizQuestionsProvider.notifier)
-                                  .gradeQuestion(
-                                      remoteServer, tagsSet, id, true);
+                                  .gradeQuestion(remoteServer, tagsSet, id,
+                                      true, forceNewQuestion.value);
+                              if (p != null) {
+                                toastification.show(
+                                  title: Text(
+                                      'This question will come up in $p seconds'),
+                                );
+                              }
                             } on ServerException catch (e) {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -259,11 +269,28 @@ class DisplayQuestion extends HookConsumerWidget {
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: ElevatedButton(
-                          onPressed: () {
-                            ref
-                                .read(quizQuestionsProvider.notifier)
-                                .gradeQuestion(
-                                    remoteServer, tagsSet, id, false);
+                          onPressed: () async {
+                            try {
+                              var p = await ref
+                                  .read(quizQuestionsProvider.notifier)
+                                  .gradeQuestion(remoteServer, tagsSet, id,
+                                      false, forceNewQuestion.value);
+                              if (p != null) {
+                                toastification.show(
+                                  title: Text(
+                                      'This question will come up in $p seconds'),
+                                );
+                              }
+                            } on ServerException catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    backgroundColor: Colors.red,
+                                    content: Text('$e'),
+                                  ),
+                                );
+                              }
+                            }
                           },
                           style: ButtonStyle(
                             backgroundColor: WidgetStatePropertyAll(Colors.red),
@@ -273,6 +300,17 @@ class DisplayQuestion extends HookConsumerWidget {
                       )
                     ],
             ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('Force New Question'),
+                Checkbox(
+                    value: forceNewQuestion.value,
+                    onChanged: (b) {
+                      forceNewQuestion.value = !forceNewQuestion.value;
+                    })
+              ],
+            )
           ],
         ),
       ),

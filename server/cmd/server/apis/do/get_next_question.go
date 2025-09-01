@@ -91,8 +91,8 @@ func GetNextQuestion(ctx context.Context, userid int64, s Server, arg *client_to
 		tagsByQuestion: tagsByQuestion,
 		tagsToAsk:      tagsToAsk,
 	}
-	slog.Info("Running algo", "allGrades", allGrades, "tagsToAsk", tagsToAsk, "tagsByQuestion", tagsByQuestion)
-	ret, err, displayError := runAlgorithm(ctx, algoArgs)
+	slog.Info("Running algo", "allGrades", allGrades, "tagsToAsk", tagsToAsk, "tagsByQuestion", tagsByQuestion, "getNewQuestion", arg.GetNewQuestion)
+	ret, err, displayError := runAlgorithm(ctx, algoArgs, arg.GetNewQuestion)
 	if displayError != "" {
 		slog.Error("error message from scheduler", "displayError", displayError)
 		return makeError(displayError)

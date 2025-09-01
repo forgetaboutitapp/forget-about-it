@@ -40,11 +40,12 @@ class QuizQuestions extends _$QuizQuestions {
     return _state;
   }
 
-  Future<void> gradeQuestion(
+  Future<int?> gradeQuestion(
     FetchDataWithToken client,
     ISet<String>? tagsQuery,
     int questionID,
     bool correct,
+    bool forceNewQuestion,
   ) async {
     _state = Ok(QuizQuestionState.waiting());
     ref.invalidateSelf();
@@ -52,18 +53,29 @@ class QuizQuestions extends _$QuizQuestions {
     final p = await client.gradeQuestion(
       client_to_server.GradeQuestion(questionid: questionID, correct: correct),
     );
-    (await p.doMap((_) async => await getNextQuestion(client, tagsQuery)))
-        .match(
-            onOk: (_) {},
-            onErr: (e) {
-              _state = Err(e);
-              ref.invalidateSelf();
-            });
+    int? whenNextQuestionDue;
+    (await p.doMap((q) async => (
+              q,
+              await getNextQuestion(
+                client,
+                tagsQuery,
+                forceNewQuestion,
+              ),
+            )))
+        .match(onOk: (q) {
+      whenNextQuestionDue = q.$1.nextDue.toInt();
+    }, onErr: (e) {
+      _state = Err(e);
+      ref.invalidateSelf();
+    });
+    int? returnVal = whenNextQuestionDue;
+    return returnVal;
   }
 
   Future<Result<()>> getNextQuestion(
     FetchDataWithToken client,
     ISet<String>? tagsQuery,
+    bool forceNewQuestion,
   ) async {
     if (tagsQuery == null) {
       _state = Err(NoTagException());
@@ -76,6 +88,7 @@ class QuizQuestions extends _$QuizQuestions {
     _state = switch (await client.getNextQuestion(
       client_to_server.GetNextQuestion(
         tags: tagsQuery.toIList(),
+        getNewQuestion: forceNewQuestion,
       ),
     )) {
       Err(value: final e) => Err(e),

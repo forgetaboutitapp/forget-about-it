@@ -28,7 +28,7 @@ func GenerateNewToken(ctx context.Context, userid int64, s Server, _ *client_to_
 		LoginUuid:         newUUID.String(),
 		UserID:            userid,
 		DeviceDescription: "",
-		Created:           time.Now().Unix(),
+		Created:           time.Now().UTC().Unix(),
 		IndexID:           int64(rand.Uint32()),
 	}
 

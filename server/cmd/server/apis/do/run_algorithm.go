@@ -40,7 +40,7 @@ type RunAlgorithm struct {
 	tagsToAsk      []string
 }
 
-func runAlgorithm(ctx context.Context, arg RunAlgorithm) (*scheduler.ResponseCorrect, error, string) {
+func runAlgorithm(ctx context.Context, arg RunAlgorithm, getNewQuestions bool) (*scheduler.ResponseCorrect, error, string) {
 	slog.Info("starting algorithm", "arg.allGrades", arg.allGrades)
 	v := sha256.Sum256(arg.algo.WasmBytes)
 	slog.Info("sha256sum", "sha", hex.EncodeToString(v[:]))
@@ -136,9 +136,10 @@ func runAlgorithm(ctx context.Context, arg RunAlgorithm) (*scheduler.ResponseCor
 
 	cards[0] = &scheduler.Card{}
 	sched := scheduler.ToScheduler{
-		CustomParams: `{}`,
-		Cards:        passCards,
-		TagsToQuery:  arg.tagsToAsk,
+		CustomParams:    `{}`,
+		Cards:           passCards,
+		TagsToQuery:     arg.tagsToAsk,
+		GetNewQuestions: getNewQuestions,
 	}
 	res, err := proto.Marshal(&sched)
 	if err != nil {

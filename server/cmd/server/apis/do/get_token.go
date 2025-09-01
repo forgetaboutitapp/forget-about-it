@@ -45,11 +45,11 @@ func GetToken(ctx context.Context, s Server, arg *client_to_server.GetToken) *se
 
 	slog.Info("Registering", "params", sql_queries.RegisterLoginParams{
 		LoginUuid:   token.String(),
-		CurrentTime: time.Now().Unix(),
+		CurrentTime: time.Now().UTC().Unix(),
 	})
 	err = s.Db.RegisterLogin(ctx, sql_queries.RegisterLoginParams{
 		LoginUuid:   token.String(),
-		CurrentTime: time.Now().Unix(),
+		CurrentTime: time.Now().UTC().Unix(),
 	})
 
 	if err != nil {

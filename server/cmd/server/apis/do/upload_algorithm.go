@@ -92,7 +92,7 @@ func UploadAlgorithm(ctx context.Context, userid int64, token string, s Server, 
 		tagsByQuestion: map[uint32][]string{},
 		tagsToAsk:      []string{},
 	}
-	_, err, displayError := runAlgorithm(ctx, runArg)
+	_, err, displayError := runAlgorithm(ctx, runArg, false)
 	if displayError != "" {
 		slog.Error("cannot run wasm", "name", algorithm.AlgorithmName, "err", displayError)
 		return makeError("cannot run wasm: " + displayError)
@@ -160,7 +160,7 @@ func UploadAlgorithm(ctx context.Context, userid int64, token string, s Server, 
 		AlgorithmName: algorithm.AlgorithmName,
 		RemoteUrl:     algorithm.RemoteURL,
 		Version:       int64(algorithm.Version),
-		Timestamp:     time.Now().Unix(),
+		Timestamp:     time.Now().UTC().Unix(),
 		Wasm:          algorithm.WasmBytes,
 	}
 	server.DbLock.Lock()
