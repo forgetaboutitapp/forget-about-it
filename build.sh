@@ -64,8 +64,9 @@ for os in linux windows freebsd openbsd darwin; do
     fi
   done
 done
+find /
 ls build
 ls build/app
 ls build/app/outputs
 ls build/app/outputs/flutter-apk/
-mv build/app/outputs/flutter-apk/app-release.apk "$1"/releases/forget-about-it.apk
+mv "$maindir"/frontend/build/app/outputs/flutter-apk/app-release.apk "$1"/releases/forget-about-it.apk
