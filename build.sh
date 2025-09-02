@@ -65,9 +65,7 @@ for os in linux windows freebsd openbsd darwin; do
   done
 done
 cd "$maindir"/frontend
-fastforge package --platform windows --targets msix
 find ./dist
-mv ./dist/1.0.0+2/forget_about_it-1.0.0+2-windows.msix "$1"/releases
 ls build
 ls build/app
 ls build/app/outputs
