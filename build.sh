@@ -64,8 +64,6 @@ for os in linux windows freebsd openbsd darwin; do
     fi
   done
 done
-cd "$maindir"/frontend
-find ./dist
 ls build
 ls build/app
 ls build/app/outputs
