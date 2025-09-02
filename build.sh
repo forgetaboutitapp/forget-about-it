@@ -64,7 +64,7 @@ for os in linux windows freebsd openbsd darwin; do
     fi
   done
 done
-find /
+find "$maindir"
 ls build
 ls build/app
 ls build/app/outputs
