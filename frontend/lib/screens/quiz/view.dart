@@ -245,6 +245,7 @@ class DisplayQuestion extends HookConsumerWidget {
                                       true, forceNewQuestion.value);
                               if (p != null) {
                                 toastification.show(
+                                  autoCloseDuration: Duration(seconds: 3),
                                   title: Text(
                                     'This question will come up in ${humanizeDuration(Duration(seconds: p))}',
                                   ),
@@ -279,6 +280,7 @@ class DisplayQuestion extends HookConsumerWidget {
                                       false, forceNewQuestion.value);
                               if (p != null) {
                                 toastification.show(
+                                  autoCloseDuration: Duration(seconds: 3),
                                   title: Text(
                                     'This question will come up in ${humanizeDuration(Duration(seconds: p))}',
                                   ),
