@@ -1,3 +1,4 @@
+import 'package:humanize_duration/humanize_duration.dart';
 import 'package:toastification/toastification.dart';
 
 import '../../data/errors.dart';
@@ -245,7 +246,8 @@ class DisplayQuestion extends HookConsumerWidget {
                               if (p != null) {
                                 toastification.show(
                                   title: Text(
-                                      'This question will come up in $p seconds'),
+                                    'This question will come up in ${humanizeDuration(Duration(seconds: p))}',
+                                  ),
                                 );
                               }
                             } on ServerException catch (e) {
@@ -278,7 +280,8 @@ class DisplayQuestion extends HookConsumerWidget {
                               if (p != null) {
                                 toastification.show(
                                   title: Text(
-                                      'This question will come up in $p seconds'),
+                                    'This question will come up in ${humanizeDuration(Duration(seconds: p))}',
+                                  ),
                                 );
                               }
                             } on ServerException catch (e) {
