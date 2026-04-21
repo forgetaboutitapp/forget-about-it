@@ -7,7 +7,7 @@ on:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -39,8 +39,15 @@ jobs:
           flutter-version: 3.29.0
 
       - name: Build Android APK
+        env:
+          KEYSTORE_BASE64: ${{ secrets.APP_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.APP_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.APP_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.APP_KEYSTORE_PASSWORD }}
         run: |
           cd frontend
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/app-release.jks
+          export KEYSTORE_FILE="app-release.jks"
           dart run build_runner build -d
           flutter build apk --release
 
@@ -56,8 +63,17 @@ jobs:
           cp frontend/build/app/outputs/flutter-apk/app-release.apk fdroid/repo/forget-about-it.apk
           cd fdroid
           fdroid init
-          # Set the repo_url for GitHub Pages
+          
+          # Configure F-Droid to use the keystore
+          echo "${{ secrets.APP_KEYSTORE_BASE64 }}" | base64 --decode > keystore.jks
           sed -i "s|.*repo_url:.*|repo_url: https://forgetaboutitapp.github.io/forget-about-it/repo|" config.yml
+          
+          # Add signing configuration to config.yml
+          echo "keystore: keystore.jks" >> config.yml
+          echo "keystorepass: ${{ secrets.APP_KEYSTORE_PASSWORD }}" >> config.yml
+          echo "keypass: ${{ secrets.APP_KEYSTORE_PASSWORD }}" >> config.yml
+          echo "repo_keyalias: ${{ secrets.APP_KEY_ALIAS }}" >> config.yml
+          
           fdroid update -c
 
       - name: Setup Pages
@@ -71,3 +87,12 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            frontend/build/app/outputs/flutter-apk/app-release.apk
+            fdroid/repo/index-v1.jar
+          token: ${{ secrets.RELEASE_TOKEN }}
