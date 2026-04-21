@@ -22,8 +22,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
-          flutter-version: 3.35.0
+          channel: beta
       - name: Run Go tests
         run: |
           pwd
@@ -53,8 +52,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
-          flutter-version: 3.35.0
+          channel: beta
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
