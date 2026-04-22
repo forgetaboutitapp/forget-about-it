@@ -8,12 +8,14 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/forgetaboutitapp/forget-about-it/server/cmd/server/apis/do"
-
 	"github.com/adrg/xdg"
 	"github.com/forgetaboutitapp/forget-about-it/server"
+	"github.com/forgetaboutitapp/forget-about-it/server/cmd/server/apis/do"
 	dbUtils "github.com/forgetaboutitapp/forget-about-it/server/pkg/db_utils"
+	"github.com/forgetaboutitapp/forget-about-it/server/protobufs-build/client_server/v1/client_serverv1connect"
 	"github.com/rs/cors"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 )
 
 func main() {
@@ -28,7 +30,9 @@ func main() {
 	}
 	handler := http.FileServer(http.FS(realSub))
 	http.DefaultServeMux.Handle("/", http.StripPrefix("/", handler))
-	http.DefaultServeMux.Handle("/api/v1/do", do.Server{Db: q, OrigDB: db})
+
+	path, connectHandler := client_serverv1connect.NewForgetAboutItServiceHandler(&do.Server{Db: q, OrigDB: db})
+	http.DefaultServeMux.Handle(path, connectHandler)
 
 	address := fmt.Sprintf(":%d", *port)
 	fmt.Printf("Starting server on address %s\n", address)
@@ -37,6 +41,6 @@ func main() {
 		AllowedOrigins:      []string{"*"},
 		AllowedHeaders:      []string{"*"},
 	}
-	log.Fatal(http.ListenAndServe(address, cors.New(corsOptions).Handler(http.DefaultServeMux)))
+	log.Fatal(http.ListenAndServe(address, h2c.NewHandler(cors.New(corsOptions).Handler(http.DefaultServeMux), &http2.Server{})))
 
 }

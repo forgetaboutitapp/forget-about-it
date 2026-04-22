@@ -2,20 +2,19 @@ package do
 
 import (
 	"context"
-	"github.com/forgetaboutitapp/forget-about-it/server/protobufs-build/protobufs/client_to_server"
-	"github.com/forgetaboutitapp/forget-about-it/server/protobufs-build/protobufs/server_to_client"
 	"log/slog"
 	"time"
 
 	"github.com/forgetaboutitapp/forget-about-it/server/pkg/sql_queries"
+	v1 "github.com/forgetaboutitapp/forget-about-it/server/protobufs-build/client_server/v1"
 )
 
-func GradeQuestion(ctx context.Context, userid int64, token string, s Server, arg *client_to_server.GradeQuestion) *server_to_client.Message {
-	slog.Info("Grading question", "arg", arg)
+func GradeQuestion(ctx context.Context, user sql_queries.User, _ string, s *Server, req *v1.GradeQuestionRequest) *v1.GradeQuestionResponse {
+	slog.Info("Grading question", "req", req)
 	initTime := time.Now().UTC().Unix()
-	questionId := arg.Questionid
+	questionId := req.Questionid
 
-	correct := arg.Correct
+	correct := req.Correct
 	result := 0
 	if correct {
 		result = 1
@@ -30,14 +29,22 @@ func GradeQuestion(ctx context.Context, userid int64, token string, s Server, ar
 	err := s.Db.GradeQuestion(ctx, params)
 	if err != nil {
 		slog.Error("unable to save grades to the database", "params", params, "err", err)
-		return makeError("Internal Server Error")
+		return &v1.GradeQuestionResponse{
+			Result: &v1.GradeQuestionResponse_Error{
+				Error: &v1.ErrorMessage{Error: "Internal Server Error"},
+			},
+		}
 	}
 
-	defaultAlgo, err := s.Db.GetDefaultAlgorithm(ctx, userid)
+	defaultAlgo, err := s.Db.GetDefaultAlgorithm(ctx, user.UserID)
 
 	if err != nil {
-		slog.Error("can't get default algo", "uuid", userid, "err", err)
-		return makeError("Can't get the default spacing algorithm")
+		slog.Error("can't get default algo", "userid", user.UserID, "err", err)
+		return &v1.GradeQuestionResponse{
+			Result: &v1.GradeQuestionResponse_Error{
+				Error: &v1.ErrorMessage{Error: "Can't get the default spacing algorithm"},
+			},
+		}
 	}
 	algos, err := s.Db.GetSpacingAlgorithms(ctx)
 
@@ -55,25 +62,41 @@ func GradeQuestion(ctx context.Context, userid int64, token string, s Server, ar
 		}
 		if !found {
 			slog.Error("default algo does not match a valid algorithm id", "algoId", algosIds, "defaultAlgo", defaultAlgo.Int64)
-			return makeError("Invalid default algorithm")
+			return &v1.GradeQuestionResponse{
+				Result: &v1.GradeQuestionResponse_Error{
+					Error: &v1.ErrorMessage{Error: "Invalid default algorithm"},
+				},
+			}
 		}
 	} else if len(algos) > 0 {
 		algo = algos[0]
 	} else {
-		slog.Error("There are no algorithms available", "algo", defaultAlgo, "algos", algo)
-		return makeError("Internal Server Error")
+		slog.Error("There are no algorithms available", "userid", user.UserID)
+		return &v1.GradeQuestionResponse{
+			Result: &v1.GradeQuestionResponse_Error{
+				Error: &v1.ErrorMessage{Error: "Internal Server Error"},
+			},
+		}
 	}
 
-	allGrades, err := s.Db.GetAllGrades(ctx, userid)
+	allGrades, err := s.Db.GetAllGrades(ctx, user.UserID)
 	if err != nil {
 		slog.Error("can't get all grades", "err", err)
-		return makeError("Internal Server Error")
+		return &v1.GradeQuestionResponse{
+			Result: &v1.GradeQuestionResponse_Error{
+				Error: &v1.ErrorMessage{Error: "Internal Server Error"},
+			},
+		}
 	}
-	allQuestions, err := s.Db.GetAllQuestions(ctx, userid)
+	allQuestions, err := s.Db.GetAllQuestions(ctx, user.UserID)
 
 	if err != nil {
 		slog.Error("can't get all questions", "err", err)
-		return makeError("Internal Server Error")
+		return &v1.GradeQuestionResponse{
+			Result: &v1.GradeQuestionResponse_Error{
+				Error: &v1.ErrorMessage{Error: "Internal Server Error"},
+			},
+		}
 	}
 
 	tagsByQuestion := make(map[uint32][]string)
@@ -81,7 +104,11 @@ func GradeQuestion(ctx context.Context, userid int64, token string, s Server, ar
 		tags, err := s.Db.GetTagsByQuestion(ctx, question.QuestionID)
 		if err != nil {
 			slog.Error("can't get tag for grade", "questionid", question.QuestionID, "err", err)
-			return makeError("Internal Server Error")
+			return &v1.GradeQuestionResponse{
+				Result: &v1.GradeQuestionResponse_Error{
+					Error: &v1.ErrorMessage{Error: "Internal Server Error"},
+				},
+			}
 		}
 		tagsByQuestion[uint32(question.QuestionID)] = tags
 	}
@@ -108,21 +135,37 @@ func GradeQuestion(ctx context.Context, userid int64, token string, s Server, ar
 	ret, err, displayError := runAlgorithm(ctx, algoArgs, false)
 	if displayError != "" {
 		slog.Error("error message from scheduler", "displayError", displayError)
-		return makeError(displayError)
+		return &v1.GradeQuestionResponse{
+			Result: &v1.GradeQuestionResponse_Error{
+				Error: &v1.ErrorMessage{Error: displayError},
+			},
+		}
 	}
 
 	if err != nil {
 		slog.Error("cannot run wasm", "algoname", algo.AlgorithmName, "err", err)
-		return makeError("Unable to run wasm")
+		return &v1.GradeQuestionResponse{
+			Result: &v1.GradeQuestionResponse_Error{
+				Error: &v1.ErrorMessage{Error: "Unable to run wasm"},
+			},
+		}
 	}
-	res := ret.FutureCardHeatmap[arg.Questionid]
-	slog.Info("Question availability", "questionid", arg.Questionid, "res", res)
+	res := ret.FutureCardHeatmap[req.Questionid]
+	slog.Info("Question availability", "questionid", req.Questionid, "res", res)
 
 	if int64(res) < initTime {
 		slog.Error("due time cannot be in the past", "res", res, "now", initTime)
-		return makeError("Internal Server Error")
+		return &v1.GradeQuestionResponse{
+			Result: &v1.GradeQuestionResponse_Error{
+				Error: &v1.ErrorMessage{Error: "Internal Server Error"},
+			},
+		}
 	}
-	return makeOk(&server_to_client.OkMessage{OkMessage: &server_to_client.OkMessage_GradeQuestion{GradeQuestion: &server_to_client.GradeQuestion{
-		NextDue: res - uint64(initTime),
-	}}})
+	return &v1.GradeQuestionResponse{
+		Result: &v1.GradeQuestionResponse_Ok{
+			Ok: &v1.GradeQuestion{
+				NextDue: res - uint64(initTime),
+			},
+		},
+	}
 }

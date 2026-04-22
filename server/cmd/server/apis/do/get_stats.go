@@ -2,39 +2,41 @@ package do
 
 import (
 	"context"
-	"github.com/forgetaboutitapp/forget-about-it/server/protobufs-build/protobufs/client_to_server"
-	"github.com/forgetaboutitapp/forget-about-it/server/protobufs-build/protobufs/server_to_client"
 	"log/slog"
 	"strconv"
 	"time"
+
+	"github.com/forgetaboutitapp/forget-about-it/server/pkg/sql_queries"
+	v1 "github.com/forgetaboutitapp/forget-about-it/server/protobufs-build/client_server/v1"
 )
 
-func GetStats(ctx context.Context, userid int64, token string, s Server, arg *client_to_server.GetStats) *server_to_client.Message {
-	slog.Info("Getting stats of user", "userid", userid)
+func GetStats(ctx context.Context, user sql_queries.User, _ string, s *Server, req *v1.GetStatsRequest) *v1.GetStatsResponse {
+	slog.Info("Getting stats of user", "userid", user.UserID)
 
-	logs, err := s.Db.GetAllGrades(ctx, userid)
+	logs, err := s.Db.GetAllGrades(ctx, user.UserID)
 	if err != nil {
 		slog.Error("Error getting all grades", "err", err)
-		return makeError("Internal Server Error")
+		return &v1.GetStatsResponse{
+			Result: &v1.GetStatsResponse_Error{
+				Error: &v1.ErrorMessage{Error: "Internal Server Error"},
+			},
+		}
 	}
 
 	heatmapData := map[uint64]uint32{}
 	for _, log := range logs {
-		ts := uint64(toStartOfDay(time.Unix(log.Timestamp, 0), int(arg.TzOffset)).Unix())
-		slog.Info("Adding heatmap data", "timestamp", log.Timestamp-7*60*60, "timestamp", ts, "tzoffset", arg)
+		ts := uint64(toStartOfDay(time.Unix(log.Timestamp, 0), int(req.TzOffset)).Unix())
+		slog.Info("Adding heatmap data", "timestamp", log.Timestamp, "start_of_day", ts, "tzoffset", req.TzOffset)
 		heatmapData[ts] += 1
 	}
 
-	futureResults := map[string]int{}
-	for i := range 100 {
-		futureResults[strconv.FormatInt(time.Now().UTC().Unix()+int64(i*60*60*24), 10)] = 100 - i
-	}
+	// NOTE: futureResults logic from original code seemed unused in the return, keeping it out for now.
 
 	pastResults := map[uint64]float64{}
 	pastPositive := map[uint64]int{}
 	pastTotal := map[uint64]int{}
 	for _, log := range logs {
-		ts := uint64(toStartOfDay(time.Unix(log.Timestamp, 0), int(arg.TzOffset)).Unix())
+		ts := uint64(toStartOfDay(time.Unix(log.Timestamp, 0), int(req.TzOffset)).Unix())
 
 		slog.Info("logs", "time", strconv.FormatUint(ts, 10), "res", log.Result, "pp", pastPositive[ts])
 
@@ -42,16 +44,21 @@ func GetStats(ctx context.Context, userid int64, token string, s Server, arg *cl
 			pastPositive[ts]++
 		}
 		pastTotal[ts]++
-
 	}
+
 	for k, v := range pastTotal {
 		pastResults[k] = float64(pastPositive[k]) / float64(v)
-
 	}
 
-	returnVal := map[string]any{"heatmap-data": heatmapData, "past-results": pastResults}
-	slog.Info("sending data", "returnVal", returnVal)
-	return makeOk(&server_to_client.OkMessage{OkMessage: &server_to_client.OkMessage_GetStats{GetStats: &server_to_client.GetStats{PastResults: pastResults, PastUsage: heatmapData}}})
+	slog.Info("sending data", "past_results_count", len(pastResults), "heatmap_count", len(heatmapData))
+	return &v1.GetStatsResponse{
+		Result: &v1.GetStatsResponse_Ok{
+			Ok: &v1.GetStats{
+				PastResults: pastResults,
+				PastUsage:   heatmapData,
+			},
+		},
+	}
 }
 
 func toStartOfDay(t time.Time, offset int) time.Time {

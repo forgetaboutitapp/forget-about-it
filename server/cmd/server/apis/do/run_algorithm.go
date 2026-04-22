@@ -5,15 +5,16 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"log/slog"
+	"strings"
+	"time"
+
 	"github.com/forgetaboutitapp/forget-about-it/server/pkg/sql_queries"
-	"github.com/forgetaboutitapp/forget-about-it/server/protobufs-build/github.com/forgetaboutitapp/protobufs/scheduler"
+	scheduler "github.com/forgetaboutitapp/forget-about-it/server/protobufs-build/scheduler/v1"
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/api"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"log/slog"
-	"strings"
-	"time"
 )
 
 type AlgorithmStruct struct {
@@ -134,7 +135,6 @@ func runAlgorithm(ctx context.Context, arg RunAlgorithm, getNewQuestions bool) (
 	slog.Info("passCards", "p", passCards)
 	slog.Info("passCards", "arg.tagsToAsk", arg.tagsToAsk)
 
-	cards[0] = &scheduler.Card{}
 	sched := scheduler.ToScheduler{
 		CustomParams:    `{}`,
 		Cards:           passCards,

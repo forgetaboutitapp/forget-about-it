@@ -2,45 +2,64 @@ package do
 
 import (
 	"context"
-	"github.com/forgetaboutitapp/forget-about-it/server/protobufs-build/protobufs/client_to_server"
-	"github.com/forgetaboutitapp/forget-about-it/server/protobufs-build/protobufs/server_to_client"
 	"log/slog"
 	"time"
 
 	"github.com/forgetaboutitapp/forget-about-it/server"
 	"github.com/forgetaboutitapp/forget-about-it/server/pkg/sql_queries"
 	uuidUtils "github.com/forgetaboutitapp/forget-about-it/server/pkg/uuid_utils"
+	v1 "github.com/forgetaboutitapp/forget-about-it/server/protobufs-build/client_server/v1"
 	"github.com/google/uuid"
 )
 
-func GetToken(ctx context.Context, s Server, arg *client_to_server.GetToken) *server_to_client.Message {
-	slog.Info("getting token", "data", arg)
+func GetToken(ctx context.Context, s *Server, req *v1.GetTokenRequest) *v1.GetTokenResponse {
+	slog.Info("getting token", "req", req)
 	var token uuid.UUID
-	if t, err := uuid.Parse(arg.Token); err == nil {
+	if t, err := uuid.Parse(req.Token); err == nil {
 		token = t
 	} else {
-		if arg.Token != "" {
-			slog.Error("unable to parse token", "data", arg, "err", err)
-			return makeError("Invalid token")
+		if req.Token != "" {
+			slog.Error("unable to parse token", "data", req.Token, "err", err)
+			return &v1.GetTokenResponse{
+				Result: &v1.GetTokenResponse_Error{
+					Error: &v1.ErrorMessage{Error: "Invalid token"},
+				},
+			}
 		}
-		token, err = uuidUtils.UuidFromMnemonic(arg.TwelveWords)
+		token, err = uuidUtils.UuidFromMnemonic(req.TwelveWords)
 		if err != nil {
-			slog.Error("Could not get uuid from twelve words", "words", arg.TwelveWords, "err", err)
-			return makeError("Invalid token")
+			slog.Error("Could not get uuid from twelve words", "words", req.TwelveWords, "err", err)
+			return &v1.GetTokenResponse{
+				Result: &v1.GetTokenResponse_Error{
+					Error: &v1.ErrorMessage{Error: "Invalid token"},
+				},
+			}
 		}
 	}
 
 	users, err := s.Db.FindUserByLogin(ctx, token.String())
 	if err != nil {
 		slog.Error("Could not find user", "token-uuid", token.String(), "err", err)
-		return makeError("Invalid User")
+		return &v1.GetTokenResponse{
+			Result: &v1.GetTokenResponse_Error{
+				Error: &v1.ErrorMessage{Error: "Invalid User"},
+			},
+		}
 	}
 	if len(users) == 0 {
 		slog.Error("no users", "token-uuid", token.String())
-		return makeError("Internal Server Error")
+		return &v1.GetTokenResponse{
+			Result: &v1.GetTokenResponse_Error{
+				Error: &v1.ErrorMessage{Error: "Internal Server Error"},
+			},
+		}
 	} else if len(users) > 1 {
-		slog.Error("There should be only one user with a given userid", "token-uuid", token.String())
-		return makeError("Internal Server Error")
+		slog.Error("There should be only one user with a given token", "token-uuid", token.String(), "count", len(users))
+		return &v1.GetTokenResponse{
+			Result: &v1.GetTokenResponse_Error{
+				Error: &v1.ErrorMessage{Error: "Internal Server Error"},
+			},
+		}
 	}
 
 	slog.Info("Registering", "params", sql_queries.RegisterLoginParams{
@@ -54,19 +73,27 @@ func GetToken(ctx context.Context, s Server, arg *client_to_server.GetToken) *se
 
 	if err != nil {
 		slog.Error("Unable to register login", "token", token, "err", err)
-		return makeError("Internal Server Error")
+		return &v1.GetTokenResponse{
+			Result: &v1.GetTokenResponse_Error{
+				Error: &v1.ErrorMessage{Error: "Internal Server Error"},
+			},
+		}
 	}
 
 	slog.Info("about to look for the old key")
 	func() {
 		server.MutexUsersWaiting.Lock()
 		defer server.MutexUsersWaiting.Unlock()
-		slog.Info("deleting users[0]", "users", users[0])
+		slog.Info("deleting user from waiting list", "userid", users[0])
 		delete(server.UsersWaiting, users[0])
 		slog.Info("done deleting")
-
 	}()
 	slog.Info("Done")
-	return makeOk(&server_to_client.OkMessage{OkMessage: &server_to_client.OkMessage_GetToken{GetToken: &server_to_client.GetToken{Token: token.String()}}})
-
+	return &v1.GetTokenResponse{
+		Result: &v1.GetTokenResponse_Ok{
+			Ok: &v1.GetToken{
+				Token: token.String(),
+			},
+		},
+	}
 }
