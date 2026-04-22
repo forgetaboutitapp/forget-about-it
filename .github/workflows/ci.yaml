@@ -33,7 +33,7 @@ jobs:
           go install google.golang.org/protobuf/cmd/protoc-gen-go@latest    
           sudo apt install just
           dart pub global activate protoc_plugin
-          go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+          go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.28.0
 
           cd protobufs
           just
@@ -68,7 +68,7 @@ jobs:
           go install google.golang.org/protobuf/cmd/protoc-gen-go@latest    
           sudo apt install just
           dart pub global activate protoc_plugin
-          go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+          go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.28.0
 
           cd protobufs
           just
