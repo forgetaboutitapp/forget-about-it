@@ -5,11 +5,9 @@ import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:toastification/toastification.dart';
 import '../../data/constants.dart';
 import '../../interop/get_url.dart';
-import '../../network/interfaces.dart';
 import '../../screens/bulk-edit/view.dart';
 import '../../screens/quiz/view.dart';
 import '../../service.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -18,7 +16,6 @@ import 'package:hive_ce_flutter/adapters.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'interop/notification_service_stub.dart';
-import 'network/network.dart';
 import 'screens/login/view.dart';
 import 'screens/home/view.dart';
 import 'screens/settings/view.dart';
@@ -63,13 +60,18 @@ class MainApp extends HookConsumerWidget {
     routes: [
       GoRoute(
         path: HomeScreen.location,
-        builder: (context, state) =>
-            HomeScreen(remoteServer: _getRemoteServer()),
+        builder: (context, state) => HomeScreen(
+            logOut: () {},
+            remoteServer: _getRemoteServer().remoteHost,
+            token: _getRemoteServer().token),
       ),
       GoRoute(
         path: BulkEditScreen.location,
-        builder: (context, state) =>
-            BulkEditScreen(remoteServer: _getRemoteServer()),
+        builder: (context, state) => BulkEditScreen(
+          remoteServer: _getRemoteServer().remoteHost,
+          token: _getRemoteServer().token,
+          logOut: () {},
+        ),
       ),
       GoRoute(
         path: LoginScreen.location,
@@ -77,12 +79,17 @@ class MainApp extends HookConsumerWidget {
       ),
       GoRoute(
         path: Stats.location,
-        builder: (context, state) => Stats(remoteServer: _getRemoteServer()),
+        builder: (context, state) => Stats(
+            remoteServer: _getRemoteServer().remoteHost,
+            token: _getRemoteServer().token,
+            logOut: () {}),
       ),
       GoRoute(
         path: QuizView.location,
         builder: (context, state) => QuizView(
-          remoteServer: _getRemoteServer(),
+          remoteServer: _getRemoteServer().remoteHost,
+          token: _getRemoteServer().token,
+          logOut: () {},
           tags: state.uri.queryParametersAll,
           isDarkMode: Hive.box(
             localSettingsHiveBox,
@@ -92,8 +99,9 @@ class MainApp extends HookConsumerWidget {
       GoRoute(
         path: SettingsScreen.location,
         builder: (context, state) => SettingsScreen(
-          filepicker: RealFilepicker(),
-          remoteServer: _getRemoteServer(),
+          token: _getRemoteServer().token,
+          remoteServer: _getRemoteServer().remoteHost,
+          logout: () {},
           curDarkMode: Hive.box(
             localSettingsHiveBox,
           ).get(localSettingsHiveDarkTheme, defaultValue: false),
@@ -139,14 +147,10 @@ class MainApp extends HookConsumerWidget {
   }
 }
 
-class RealFilepicker extends GenericFilepicker {
-  @override
-  Future<FilePickerResult?> pickFile({
-    required FileType type,
-    required List<String> allowedExtensions,
-  }) =>
-      FilePicker.platform.pickFiles(
-        type: type,
-        allowedExtensions: allowedExtensions,
-      );
+class RemoteServer {
+  final http.Client client;
+  final String remoteHost;
+  final String token;
+  const RemoteServer(
+      {required this.remoteHost, required this.token, required this.client});
 }

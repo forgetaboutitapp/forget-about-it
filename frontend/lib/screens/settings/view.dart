@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:developer' as dev;
 
-import '../../network/interfaces.dart';
-import '../../protobufs-build/client_to_server.pb.dart' as client_to_server;
+import 'package:forget_about_it/protobufs-build/client_server/v1/client_to_server.pbgrpc.dart';
+import 'package:grpc/grpc_web.dart';
+
 import '../../screens/general-display/show_error.dart';
 import '../../screens/settings/add_algorithm.dart';
 import '../../screens/settings/models/model.dart';
@@ -19,15 +20,17 @@ import 'package:permission_handler/permission_handler.dart';
 class SettingsScreen extends HookConsumerWidget {
   static const location = '/settings';
   final bool curDarkMode;
-  final FetchDataWithToken remoteServer;
-  final GenericFilepicker filepicker;
+  final String remoteServer;
+  final String token;
+  final Function() logout;
   final FutureOr<void> Function(bool) switchDarkMode;
   const SettingsScreen({
     super.key,
-    required this.curDarkMode,
     required this.remoteServer,
+    required this.token,
+    required this.logout,
+    required this.curDarkMode,
     required this.switchDarkMode,
-    required this.filepicker,
   });
 
   @override
@@ -35,7 +38,7 @@ class SettingsScreen extends HookConsumerWidget {
     final localCurDarkMode = useState(curDarkMode);
     final stillWaitingForRemoteServer = useState(true);
 
-    final remoteSettings = ref.watch(remoteSettingsNotifierProvider);
+    final remoteSettings = ref.watch(remoteSettingsProvider);
     final ValueNotifier<bool?> hasNotificationPermission = useState(null);
     final ValueNotifier<bool?> permDenied = useState(null);
 
@@ -105,20 +108,21 @@ class SettingsScreen extends HookConsumerWidget {
                             groupValue: remoteSettings.defaultAlgorithm ?? 0,
                             onChanged: (int? v) async {
                               stillWaitingForRemoteServer.value = true;
-
-                              (await remoteServer.setDefaultAlgorithm(
-                                client_to_server.SetDefaultAlgorithm(
-                                    algorithmId: e.algorithmID),
-                              ))
-                                  .match(
-                                      onOk: (_) {
-                                        if (context.mounted) {
-                                          refresh(stillWaitingForRemoteServer,
-                                              ref, context);
-                                        }
-                                      },
-                                      onErr: (e) =>
-                                          showError(context, e.toString()));
+                              final client = await ForgetAboutItServiceClient(
+                                      GrpcWebClientChannel.xhr(
+                                          Uri.parse(remoteServer)))
+                                  .getRemoteSettings(
+                                      GetRemoteSettingsRequest(token: token));
+                              if (client.hasError()) {
+                                if (context.mounted) {
+                                  showError(context, e.toString());
+                                }
+                              } else {
+                                if (context.mounted) {
+                                  refresh(stillWaitingForRemoteServer, ref,
+                                      context);
+                                }
+                              }
                             },
                           ),
                           trailing: IconButton(
@@ -127,23 +131,29 @@ class SettingsScreen extends HookConsumerWidget {
                                     e.algorithmID
                                 ? null
                                 : () async {
-                                    (await remoteServer.removeAlgorithm(
-                                      client_to_server.RemoveAlgorithm(
+                                    final client =
+                                        await ForgetAboutItServiceClient(
+                                                GrpcWebClientChannel.xhr(
+                                                    Uri.parse(remoteServer)))
+                                            .removeAlgorithm(
+                                      RemoveAlgorithmRequest(
+                                          token: token,
                                           algorithmId: e.algorithmName),
-                                    ))
-                                        .match(
-                                      onErr: (err) =>
-                                          showError(context, err.toString()),
-                                      onOk: (_) {
-                                        if (context.mounted) {
-                                          refresh(
-                                            stillWaitingForRemoteServer,
-                                            ref,
-                                            context,
-                                          );
-                                        }
-                                      },
                                     );
+
+                                    if (client.hasError()) {
+                                      if (context.mounted) {
+                                        showError(context, client.error.error);
+                                      }
+                                    } else {
+                                      if (context.mounted) {
+                                        refresh(
+                                          stillWaitingForRemoteServer,
+                                          ref,
+                                          context,
+                                        );
+                                      }
+                                    }
                                   },
                           ),
                         );
@@ -156,11 +166,12 @@ class SettingsScreen extends HookConsumerWidget {
                         final needsRefresh = await showDialog(
                           context: context,
                           builder: (context) => AddAlgorithm(
-                              algos: remoteSettings?.remoteAlgorithms
-                                  ?.toSet()
-                                  .toISet(),
-                              remoteServer: remoteServer,
-                              filepicker: filepicker),
+                            token: token,
+                            algos: remoteSettings?.remoteAlgorithms
+                                ?.toSet()
+                                .toISet(),
+                            remoteServer: remoteServer,
+                          ),
                         );
                         if (context.mounted && needsRefresh == true) {
                           refresh(stillWaitingForRemoteServer, ref, context);
@@ -207,26 +218,31 @@ class SettingsScreen extends HookConsumerWidget {
                                       ? null
                                       : () async {
                                           final res =
-                                              await remoteServer.removeLogin(
-                                            client_to_server.RemoveLogin(
+                                              await ForgetAboutItServiceClient(
+                                                      GrpcWebClientChannel.xhr(
+                                                          Uri.parse(
+                                                              remoteServer)))
+                                                  .removeLogin(
+                                            RemoveLoginRequest(
+                                                token: token,
                                                 loginId: e.loginId),
                                           );
-                                          res.match(
-                                            onOk: (o) {
-                                              if (context.mounted) {
-                                                refresh(
-                                                    stillWaitingForRemoteServer,
-                                                    ref,
-                                                    context);
-                                              }
-                                            },
-                                            onErr: (e) {
+
+                                          if (res.hasOk()) {
+                                            if (context.mounted) {
+                                              refresh(
+                                                  stillWaitingForRemoteServer,
+                                                  ref,
+                                                  context);
+                                            }
+                                          } else if (res.hasError()) {
+                                            if (context.mounted) {
                                               showError(
                                                 context,
                                                 e.toString(),
                                               );
-                                            },
-                                          );
+                                            }
+                                          }
                                         },
                                 ),
                               );
@@ -238,8 +254,10 @@ class SettingsScreen extends HookConsumerWidget {
                             onPressed: (context) async {
                               await showDialog(
                                 context: context,
-                                builder: (context) =>
-                                    QRDialog(remoteServer: remoteServer),
+                                builder: (context) => QRDialog(
+                                    remoteHost: remoteServer,
+                                    token: token,
+                                    logOut: logout),
                               );
                               if (context.mounted) {
                                 refresh(
@@ -273,8 +291,8 @@ class SettingsScreen extends HookConsumerWidget {
         stillWaitingForRemoteServer.value = true;
       }
       final p = await ref
-          .read(remoteSettingsNotifierProvider.notifier)
-          .getData(remoteServer);
+          .read(remoteSettingsProvider.notifier)
+          .getData(remoteServer, token, logout);
       stillWaitingForRemoteServer.value = false;
       if (p != null) {
         stillWaitingForRemoteServer.value = false;

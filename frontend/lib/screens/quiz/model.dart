@@ -1,11 +1,13 @@
-import '../../network/interfaces.dart';
+import 'package:forget_about_it/protobufs-build/client_server/v1/client_to_server.pbgrpc.dart';
+import 'package:forget_about_it/protobufs-build/client_server/v1/server_to_client.pb.dart';
+import 'package:grpc/grpc_web.dart';
+
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../fn/fn.dart';
-import '../../protobufs-build/client_to_server.pb.dart' as client_to_server;
-import '../../protobufs-build/server_to_client.pbenum.dart'
+import '../../protobufs-build/client_server/v1/server_to_client.pbenum.dart'
     as server_to_client_enums;
 
 part 'model.g.dart';
@@ -41,7 +43,9 @@ class QuizQuestions extends _$QuizQuestions {
   }
 
   Future<int?> gradeQuestion(
-    FetchDataWithToken client,
+    String host,
+    String token,
+    Function logOut,
     ISet<String>? tagsQuery,
     int questionID,
     bool correct,
@@ -49,31 +53,49 @@ class QuizQuestions extends _$QuizQuestions {
   ) async {
     _state = Ok(QuizQuestionState.waiting());
     ref.invalidateSelf();
-
-    final p = await client.gradeQuestion(
-      client_to_server.GradeQuestion(questionid: questionID, correct: correct),
-    );
+    final client = await ForgetAboutItServiceClient(
+            GrpcWebClientChannel.xhr(Uri.parse(host)))
+        .gradeQuestion(GradeQuestionRequest(
+            token: token, questionid: questionID, correct: correct));
     int? whenNextQuestionDue;
-    (await p.doMap((q) async => (
-              q,
-              await getNextQuestion(
-                client,
-                tagsQuery,
-                forceNewQuestion,
-              ),
-            )))
-        .match(onOk: (q) {
-      whenNextQuestionDue = q.$1.nextDue.toInt();
-    }, onErr: (e) {
-      _state = Err(e);
-      ref.invalidateSelf();
-    });
+    final _ = switch (client) {
+      GradeQuestion(:final nextDue) => (() async {
+          final _ = switch (await getNextQuestion(
+            host,
+            token,
+            logOut,
+            tagsQuery,
+            forceNewQuestion,
+          )) {
+            Ok() => (() {
+                whenNextQuestionDue = nextDue.toInt();
+                return null;
+              })(),
+            Err(:final value) => (() {
+                _state = Err(Exception(value));
+                ref.invalidateSelf();
+              })()
+          };
+        })(),
+      Err(:final value) => (() {
+          _state = Err(value);
+          ref.invalidateSelf();
+          return null;
+        })(),
+      var v => (() {
+          _state = Err(Exception('State Error: $v'));
+          ref.invalidateSelf();
+          return null;
+        })(),
+    };
     int? returnVal = whenNextQuestionDue;
     return returnVal;
   }
 
   Future<Result<()>> getNextQuestion(
-    FetchDataWithToken client,
+    String host,
+    String token,
+    Function logOut,
     ISet<String>? tagsQuery,
     bool forceNewQuestion,
   ) async {
@@ -85,19 +107,27 @@ class QuizQuestions extends _$QuizQuestions {
     _state = Ok(QuizQuestionState.waiting());
     ref.invalidateSelf();
 
-    _state = switch (await client.getNextQuestion(
-      client_to_server.GetNextQuestion(
-        tags: tagsQuery.toIList(),
-        getNewQuestion: forceNewQuestion,
-      ),
-    )) {
-      Err(value: final e) => Err(e),
-      Ok(value: final v) => Ok(
+    final client = await ForgetAboutItServiceClient(
+            GrpcWebClientChannel.xhr(Uri.parse(host)))
+        .getNextQuestion(GetNextQuestionRequest(
+            token: token,
+            tags: tagsQuery.toIList(),
+            getNewQuestion: forceNewQuestion));
+    _state = switch (client) {
+      Err(:final value) => Err(Exception(value)),
+      GetNextQuestion(
+        :final newQuestions,
+        :final dueQuestions,
+        :final nonDueQuestions,
+        :final flashcard,
+        :final typeOfQuestion,
+      ) =>
+        Ok(
           QuizQuestionStateData(
-            id: v.flashcard.id,
-            question: v.flashcard.question,
-            answer: v.flashcard.answer,
-            questionType: switch (v.typeOfQuestion) {
+            id: flashcard.id,
+            question: flashcard.question,
+            answer: flashcard.answer,
+            questionType: switch (typeOfQuestion) {
               server_to_client_enums
                     .GetNextQuestion_TypeOfQuestion.TYPE_OF_QUESTION_NEW =>
                 QuestionType.newQuestion,
@@ -113,11 +143,12 @@ class QuizQuestions extends _$QuizQuestions {
               server_to_client_enums.GetNextQuestion_TypeOfQuestion() =>
                 throw UnimplementedError(),
             },
-            newCards: v.newQuestions,
-            dueCards: v.dueQuestions,
-            nonDueCards: v.nonDueQuestions,
+            newCards: newQuestions,
+            dueCards: dueQuestions,
+            nonDueCards: nonDueQuestions,
           ),
         ),
+      var v => Err(Exception('State Error: $v')),
     };
     ref.invalidateSelf();
     return Ok(());

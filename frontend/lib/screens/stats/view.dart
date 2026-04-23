@@ -1,6 +1,5 @@
 import 'dart:developer' as developer;
 
-import '../../network/interfaces.dart';
 import '../../screens/general-display/show_error.dart';
 import '../../screens/stats/models/stats.dart';
 import '../../screens/stats/models/stats_data.dart';
@@ -13,8 +12,15 @@ import '../../fn/fn.dart';
 
 class Stats extends HookConsumerWidget {
   static String location = '/stats';
-  final FetchDataWithToken remoteServer;
-  const Stats({super.key, required this.remoteServer});
+  final String remoteServer;
+  final String token;
+  final Function logOut;
+  const Stats({
+    super.key,
+    required this.remoteServer,
+    required this.token,
+    required this.logOut,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,6 +37,8 @@ class Stats extends HookConsumerWidget {
       isError.value = false;
       await ref.read(statsProvider.notifier).getStats(
             remoteServer,
+            token,
+            logOut,
             DateTime(
               useYear.year,
             ),
@@ -42,6 +50,8 @@ class Stats extends HookConsumerWidget {
           );
       await ref.read(statsProvider.notifier).getStats(
             remoteServer,
+            token,
+            logOut,
             DateTime(
               pastYear.year,
             ),
@@ -53,6 +63,8 @@ class Stats extends HookConsumerWidget {
           );
       await ref.read(statsProvider.notifier).getStats(
             remoteServer,
+            token,
+            logOut,
             DateTime(
               futureYear.year,
             ),
@@ -80,6 +92,8 @@ class Stats extends HookConsumerWidget {
                   )
             : switch (statsData) {
                 Ok(:final value) => StatsView(
+                    token: token,
+                    logOut: logOut,
                     statsData: value,
                     remoteServer: remoteServer,
                     getNewUseDate: (newDate) {
@@ -111,7 +125,9 @@ class Stats extends HookConsumerWidget {
 }
 
 class StatsView extends HookConsumerWidget {
-  final FetchDataWithToken remoteServer;
+  final String remoteServer;
+  final String token;
+  final Function logOut;
   final StatsData statsData;
   final Function(DateTime newDate) getNewUseDate;
   final Function(DateTime newDate) getNewPastDate;
@@ -124,6 +140,8 @@ class StatsView extends HookConsumerWidget {
     required this.getNewFutureDate,
     required this.remoteServer,
     required this.statsData,
+    required this.token,
+    required this.logOut,
   });
 
   @override

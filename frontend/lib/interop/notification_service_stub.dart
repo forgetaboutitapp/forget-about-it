@@ -15,7 +15,7 @@ class NotificationService {
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
     const initSettings = InitializationSettings(android: initSettingsAndroid);
-    await notificationsPlugin.initialize(initSettings);
+    await notificationsPlugin.initialize(settings: initSettings);
     _isInitialized = true;
   }
 
@@ -35,10 +35,10 @@ class NotificationService {
   }) async {
     log('showing notification');
     return notificationsPlugin.show(
-      id,
-      title,
-      body,
-      notificationDetails(),
+      id: id,
+      title: title,
+      body: body,
+      notificationDetails: notificationDetails(),
     );
   }
 }

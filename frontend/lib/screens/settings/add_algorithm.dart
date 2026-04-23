@@ -1,5 +1,8 @@
 import 'dart:convert';
 
+import 'package:forget_about_it/protobufs-build/client_server/v1/client_to_server.pbgrpc.dart';
+import 'package:grpc/grpc_web.dart';
+
 import '../../screens/general-display/show_error.dart';
 import '../../screens/settings/models/remote_algorithm.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
@@ -7,19 +10,19 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import '../../fn/fn.dart';
-import '../../network/interfaces.dart';
-import '../../protobufs-build/client_to_server.pb.dart' as client_to_server;
+import '../../protobufs-build/client_server/v1/client_to_server.pb.dart'
+    as client_to_server;
 import 'models/uploaded_file_state.dart';
 
 class AddAlgorithm extends HookWidget {
   const AddAlgorithm({
     super.key,
     required this.remoteServer,
-    required this.filepicker,
     required this.algos,
+    required this.token,
   });
-  final FetchDataWithToken remoteServer;
-  final GenericFilepicker filepicker;
+  final String remoteServer;
+  final String token;
   final ISet<RemoteAlgorithm>? algos;
 
   @override
@@ -40,7 +43,7 @@ class AddAlgorithm extends HookWidget {
             uploadedFileValue == null
                 ? TextButton.icon(
                     onPressed: () async {
-                      FilePickerResult? result = await filepicker.pickFile(
+                      FilePickerResult? result = await FilePicker.pickFiles(
                         type: FileType.custom,
                         allowedExtensions: ['json'],
                       );
@@ -134,13 +137,16 @@ class AddAlgorithm extends HookWidget {
                         }
                         if (shouldUpload) {
                           isUploading.value = true;
-                          (await remoteServer.uploadAlgorithm(
-                                  client_to_server.UploadAlgorithm(
-                                      algorithm: data)))
-                              .match(
-                                  onErr: (e) =>
-                                      showError(context, e.toString()),
-                                  onOk: (_) {});
+                          final p = await ForgetAboutItServiceClient(
+                                  GrpcWebClientChannel.xhr(
+                                      Uri.parse(remoteServer)))
+                              .uploadAlgorithm(
+                                  client_to_server.UploadAlgorithmRequest(
+                            algorithm: data,
+                          ));
+                          if (p.hasError() && context.mounted) {
+                            showError(context, p.error.error);
+                          }
                         }
                       },
                     ))

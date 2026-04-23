@@ -1,4 +1,3 @@
-import '../../../network/interfaces.dart';
 import '../../../screens/settings/models/remote_settings.dart';
 import '../../../screens/settings/services.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -17,8 +16,9 @@ class RemoteSettingsNotifier extends _$RemoteSettingsNotifier {
     }
   }
 
-  Future<Exception?> getData(FetchDataWithToken remoteServer) async {
-    final newState = await getRemoteSettings(remoteServer);
+  Future<Exception?> getData(
+      String remoteServer, String token, Function logOut) async {
+    final newState = await getRemoteSettings(remoteServer, token, logOut);
     Exception? returnVal;
     newState.match(onErr: (err) {
       returnVal = err;

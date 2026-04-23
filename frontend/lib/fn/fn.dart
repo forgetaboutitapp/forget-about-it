@@ -104,11 +104,11 @@ class Err<T> extends Result<T> {
   Err(this.value);
 
   @override
-  Result<S> map<S>(S Function(T origVal) f) => Err(this.value);
+  Result<S> map<S>(S Function(T origVal) f) => Err(value);
 
   @override
   Future<Result<S>> doMap<S>(Future<S> Function(T origVal) f) async =>
-      Err(this.value);
+      Err(value);
 
   @override
   Future<void> doMatch({

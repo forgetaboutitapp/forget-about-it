@@ -2,7 +2,6 @@ import 'package:humanize_duration/humanize_duration.dart';
 import 'package:toastification/toastification.dart';
 
 import '../../data/errors.dart';
-import '../../network/interfaces.dart';
 import '../../screens/quiz/model.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter/material.dart';
@@ -15,7 +14,9 @@ import '../general-display/show_error.dart';
 
 class QuizView extends HookConsumerWidget {
   static String location = '/quiz';
-  final FetchDataWithToken remoteServer;
+  final String remoteServer;
+  final String token;
+  final Function logOut;
   final Map<String, List<String>> tags;
   final bool isDarkMode;
   const QuizView({
@@ -23,6 +24,8 @@ class QuizView extends HookConsumerWidget {
     required this.remoteServer,
     required this.tags,
     required this.isDarkMode,
+    required this.token,
+    required this.logOut,
   });
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -36,7 +39,7 @@ class QuizView extends HookConsumerWidget {
         try {
           ref
               .read(quizQuestionsProvider.notifier)
-              .getNextQuestion(remoteServer, tagsSet, false);
+              .getNextQuestion(remoteServer, token, logOut, tagsSet, false);
         } on ServerException catch (e) {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -83,6 +86,8 @@ class QuizView extends HookConsumerWidget {
                   amountDueQuestions: dueCards,
                   amountNewQuestions: newCards,
                   amountNonDueQuestions: nonDueCards,
+                  token: token,
+                  logOut: logOut,
                 ),
             },
         },
@@ -112,7 +117,9 @@ class DisplayQuestion extends HookConsumerWidget {
   final String answer;
   final int id;
   final ISet<String>? tagsSet;
-  final FetchDataWithToken remoteServer;
+  final String token;
+  final String remoteServer;
+  final Function logOut;
   final QuestionType questionType;
   final bool isDarkMode;
   final int amountNewQuestions;
@@ -130,6 +137,8 @@ class DisplayQuestion extends HookConsumerWidget {
     required this.amountNewQuestions,
     required this.amountDueQuestions,
     required this.amountNonDueQuestions,
+    required this.token,
+    required this.logOut,
   });
 
   @override
@@ -241,8 +250,14 @@ class DisplayQuestion extends HookConsumerWidget {
                             try {
                               var p = await ref
                                   .read(quizQuestionsProvider.notifier)
-                                  .gradeQuestion(remoteServer, tagsSet, id,
-                                      true, forceNewQuestion.value);
+                                  .gradeQuestion(
+                                      remoteServer,
+                                      token,
+                                      logOut,
+                                      tagsSet,
+                                      id,
+                                      true,
+                                      forceNewQuestion.value);
                               if (p != null) {
                                 toastification.show(
                                   autoCloseDuration: Duration(seconds: 3),
@@ -276,8 +291,14 @@ class DisplayQuestion extends HookConsumerWidget {
                             try {
                               var p = await ref
                                   .read(quizQuestionsProvider.notifier)
-                                  .gradeQuestion(remoteServer, tagsSet, id,
-                                      false, forceNewQuestion.value);
+                                  .gradeQuestion(
+                                      remoteServer,
+                                      token,
+                                      logOut,
+                                      tagsSet,
+                                      id,
+                                      false,
+                                      forceNewQuestion.value);
                               if (p != null) {
                                 toastification.show(
                                   autoCloseDuration: Duration(seconds: 3),
