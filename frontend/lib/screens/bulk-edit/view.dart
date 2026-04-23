@@ -1,7 +1,6 @@
 import 'dart:developer' as developer;
 
 import '../../future_widget/future_widget.dart';
-import '../../network/interfaces.dart';
 import '../../screens/general-display/show_error.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter/material.dart';
@@ -14,17 +13,22 @@ import 'service.dart';
 
 class BulkEditScreen extends HookWidget {
   static String location = '/bulk-edit';
-  final FetchDataWithToken remoteServer;
+  final String remoteServer;
+  final String token;
+  final Function() logOut;
 
   const BulkEditScreen({
     super.key,
     required this.remoteServer,
+    required this.token,
+    required this.logOut,
   });
 
   @override
   Widget build(BuildContext context) {
     final future = useState(() async {
-      return await getAllQuestions(remoteServer: remoteServer);
+      return await getAllQuestions(
+          token: token, remoteHost: remoteServer, logOut: logOut);
     }());
     developer.log('future: ${future.toString()}');
     return Scaffold(
@@ -64,12 +68,16 @@ class BulkEditScreen extends HookWidget {
   Future<(Result<String>, Exception?)> runPostGetAllQuestions(
       IList<Flashcard> r) async {
     final Result<String> paqRes = switch (await (await postAllQuestions(
-      remoteServer: remoteServer,
+      remoteHost: remoteServer,
+      token: token,
+      logOut: logOut,
       flashcards: r,
     ))
         .doFlatMap(
       (_) async => await getAllQuestions(
-        remoteServer: remoteServer,
+        remoteHost: remoteServer,
+        token: token,
+        logOut: logOut,
       ),
     )) {
       Ok(:final value) => Ok(value),
@@ -80,7 +88,9 @@ class BulkEditScreen extends HookWidget {
       Ok(:final value) => (Ok(value), null),
       Err(:final value) => (
           await getAllQuestions(
-            remoteServer: remoteServer,
+            token: token,
+            logOut: logOut,
+            remoteHost: remoteServer,
           ),
           value
         ),

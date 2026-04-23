@@ -1,19 +1,23 @@
 import 'dart:convert';
 
-import '../../network/interfaces.dart';
+import 'package:forget_about_it/protobufs-build/client_server/v1/client_to_server.pbgrpc.dart';
+import 'package:grpc/grpc_web.dart';
+
 import '../../screens/login/view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import '../../protobufs-build/client_to_server.pb.dart' as client_to_server;
 import '../../screens/general-display/show_error.dart';
 
 class QRDialog extends HookWidget {
-  final FetchDataWithToken remoteServer;
-
+  final String remoteHost;
+  final String token;
+  final Function() logOut;
   const QRDialog({
     super.key,
-    required this.remoteServer,
+    required this.remoteHost,
+    required this.token,
+    required this.logOut,
   });
 
   @override
@@ -22,45 +26,47 @@ class QRDialog extends HookWidget {
     final show12Words = useState(LoginMethod.twelveWords);
     useEffect(() {
       bool isCancelled = false;
-      remoteServer
-          .generateNewToken(client_to_server.GenerateNewToken())
+
+      ForgetAboutItServiceClient(
+              GrpcWebClientChannel.xhr(Uri.parse(remoteHost)))
+          .generateNewToken(GenerateNewTokenRequest(
+        token: token,
+      ))
           .then((e) async {
-        e.match(
-            onErr: (e) => showError(context, e.toString()),
-            onOk: (e) async {
-              qrCodeData.value = e.newUuid;
-              while (!isCancelled) {
-                (await remoteServer
-                        .checkNewToken(client_to_server.CheckNewToken()))
-                    .doMatch(
-                  onOk: (cancelled) async {
-                    if (cancelled.done) {
-                      isCancelled = true;
-                      if (context.mounted) {
-                        Navigator.of(context).pop();
-                      }
-                    }
-                  },
-                  onErr: (e) async => showError(
-                    context,
-                    e.toString(),
-                  ),
-                );
-                await Future.delayed(Duration(seconds: 1));
+        if (e.hasError()) {
+          showError(context, e.error.error);
+          return;
+        }
+        final res = e.ok;
+        qrCodeData.value = res.newUuid;
+        while (!isCancelled) {
+          final a = await ForgetAboutItServiceClient(
+                  GrpcWebClientChannel.xhr(Uri.parse(remoteHost)))
+              .checkNewToken(CheckNewTokenRequest());
+          if (a.hasError()) {
+            if (context.mounted) {
+              showError(context, a.error.error);
+            }
+          } else if (a.hasOk()) {
+            if (a.ok.done) {
+              isCancelled = true;
+              if (context.mounted) {
+                Navigator.of(context).pop();
               }
-            });
+            }
+          }
+          await Future.delayed(Duration(seconds: 1));
+        }
       });
       return () async {
-        (await remoteServer.deleteNewToken(
-          client_to_server.DeleteNewToken(),
-        ))
-            .match(
-          onOk: (_) {},
-          onErr: (e) => showError(
-            context,
-            e.toString(),
-          ),
-        );
+        final p = await ForgetAboutItServiceClient(
+                GrpcWebClientChannel.xhr(Uri.parse(remoteHost)))
+            .deleteNewToken(DeleteNewTokenRequest(
+          token: token,
+        ));
+        if (p.hasError() && context.mounted) {
+          showError(context, p.error.error);
+        }
       };
     }, []);
     final qrCodeDataValue = qrCodeData.value;
@@ -80,7 +86,7 @@ class QRDialog extends HookWidget {
                 LoginMethod.twelveWords =>
                   TwelveWordView(twelveWords: decode['mnemonic']),
                 LoginMethod.token => TokenView(
-                    remoteHost: remoteServer.getRemoteHost(),
+                    remoteHost: remoteHost,
                     uuid: decode['new-uuid'],
                   ),
               },
@@ -186,12 +192,18 @@ class TwelveWordView extends StatelessWidget {
 
 class QrImageViewer extends StatelessWidget {
   final String uuid;
-  final FetchDataWithToken remoteServer;
+  final String remoteServer;
+  final String token;
+  final Function() logOut;
   const QrImageViewer(
-      {super.key, required this.uuid, required this.remoteServer});
+      {super.key,
+      required this.uuid,
+      required this.remoteServer,
+      required this.token,
+      required this.logOut});
   @override
   Widget build(BuildContext context) => QrImageView(
-        data: '${remoteServer.getRemoteHost()};$uuid',
+        data: '$remoteServer;$uuid',
         version: QrVersions.auto,
         size: 400,
         gapless: false,

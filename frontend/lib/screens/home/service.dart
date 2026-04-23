@@ -1,16 +1,26 @@
-import '../../network/interfaces.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
+import 'package:forget_about_it/protobufs-build/client_server/v1/client_to_server.pbgrpc.dart';
+import 'package:forget_about_it/protobufs-build/client_server/v1/server_to_client.pb.dart';
+import 'package:grpc/grpc_web.dart';
 
 import '../../fn/fn.dart';
-import '../../protobufs-build/client_to_server.pb.dart' as client_to_server;
 import 'model.dart' as model;
 
 Future<Result<(IList<model.Tag>, bool)>> getAllTags(
-    FetchDataWithToken fd) async {
-  return (await fd.getAllTags(client_to_server.GetAllTags())).map((e) => (
-        e.tags
+    String token, String remoteHost, Function logOut) async {
+  final client = await ForgetAboutItServiceClient(
+          GrpcWebClientChannel.xhr(Uri.parse(remoteHost)))
+      .getAllTags(GetAllTagsRequest(token: token));
+
+  return switch (client) {
+    GetAllTags(:var tags, :var canRun) => Ok((
+        tags
             .map((t) => model.Tag(tag: t.tag, totalQuestions: t.totalQuestions))
             .toIList(),
-        e.canRun
-      ));
+        canRun
+      )),
+    ErrorMessage(:var error, :var shouldLogOut) =>
+      shouldLogOut ? logOut() : Err(Exception(error)),
+    _ => Err(Exception('Server Error')),
+  };
 }

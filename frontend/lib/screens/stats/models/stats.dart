@@ -1,5 +1,3 @@
-import '../../../network/interfaces.dart';
-
 import '../../../fn/fn.dart';
 import '../service.dart' as services;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -18,8 +16,8 @@ class Stats extends _$Stats {
     return _cache;
   }
 
-  Future<void> getStats(
-      FetchDataWithToken fd, DateTime initTime, DateTime endTime) async {
+  Future<void> getStats(String remoteHost, String token, Function logout,
+      DateTime initTime, DateTime endTime) async {
     bool reset = false;
     if (_originalDate.isAfter(initTime)) {
       _originalDate = initTime;
@@ -30,7 +28,8 @@ class Stats extends _$Stats {
       reset = true;
     }
     if (reset) {
-      _cache = await services.getStats(fd, initTime, endTime);
+      _cache =
+          await services.getStats(remoteHost, token, logout, initTime, endTime);
       ref.invalidateSelf();
     }
   }

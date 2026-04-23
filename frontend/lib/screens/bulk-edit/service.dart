@@ -1,8 +1,10 @@
+import 'package:forget_about_it/protobufs-build/client_server/v1/client_to_server.pbgrpc.dart';
+import 'package:forget_about_it/protobufs-build/client_server/v1/server_to_client.pb.dart';
+import 'package:grpc/grpc_web.dart';
+
 import '../../fn/fn.dart';
-import '../../network/interfaces.dart';
-import '../../protobufs-build/client_to_server.pb.dart' as client_to_server;
-import '../../protobufs-build/server_to_client.pb.dart' as server_to_client;
-import '../../screens/bulk-edit/model.dart';
+import '../../protobufs-build/client_server/v1/server_to_client.pb.dart'
+    as server_to_client;
 import '../../screens/bulk-edit/parse.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 
@@ -20,45 +22,58 @@ const String _originalText =
 % Questions and IDs must be unique per user\n''';
 
 Future<Result<String>> getAllQuestions(
-        {required FetchDataWithToken remoteServer}) async =>
-    (await remoteServer.getAllQuestions(client_to_server.GetAllQuestions()))
-        .flatMap(
-      (a) => Result.safe(
-        () => '$_originalText\n${unparse(
-          a.flashcards
+    {required String token,
+    required String remoteHost,
+    required Function() logOut}) async {
+  final client = await ForgetAboutItServiceClient(
+          GrpcWebClientChannel.xhr(Uri.parse(remoteHost)))
+      .getAllQuestions(GetAllQuestionsRequest(token: token));
+  return switch (client) {
+    GetAllQuestions(:var flashcards) =>
+      Result.safe(() => '$_originalText\n${unparse(
+            flashcards
+                .map(
+                  (e) => model.Flashcard(
+                    id: e.id,
+                    question: e.question,
+                    answer: e.answer,
+                    explanation: e.explanation,
+                    memoHint: e.memoHint,
+                    tags: e.tags.toIList(),
+                  ),
+                )
+                .toIList(),
+          )}'),
+    Err(:final value) => Err(value),
+    var v => Err(Exception(v.toString())),
+  };
+}
+
+Future<Result<void>> postAllQuestions({
+  required String remoteHost,
+  required String token,
+  required Function() logOut,
+  required IList<model.Flashcard> flashcards,
+}) async {
+  final client = await ForgetAboutItServiceClient(
+          GrpcWebClientChannel.xhr(Uri.parse(remoteHost)))
+      .postAllQuestions(PostAllQuestionsRequest(
+          token: token,
+          flashcards: flashcards
               .map(
-                (e) => model.Flashcard(
+                (e) => server_to_client.Flashcard(
                   id: e.id,
                   question: e.question,
                   answer: e.answer,
-                  explanation: e.explanation,
                   memoHint: e.memoHint,
-                  tags: e.tags.toIList(),
+                  explanation: e.explanation,
+                  tags: e.tags,
                 ),
               )
-              .toIList(),
-        )}',
-      ),
-    );
-
-Future<Result<server_to_client.PostAllQuestions>> postAllQuestions({
-  required FetchDataWithToken remoteServer,
-  required IList<Flashcard> flashcards,
-}) async {
-  return await remoteServer.postAllQuestions(
-    client_to_server.PostAllQuestions(
-      flashcards: flashcards
-          .map(
-            (e) => client_to_server.Flashcard(
-              id: e.id,
-              question: e.question,
-              answer: e.answer,
-              memoHint: e.memoHint,
-              explanation: e.explanation,
-              tags: e.tags,
-            ),
-          )
-          .toList(),
-    ),
-  );
+              .toList()));
+  return switch (client) {
+    PostAllQuestions() => Ok(null),
+    Err(:final value) => Err(value),
+    var v => Err(Exception(v.toString())),
+  };
 }

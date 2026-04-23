@@ -1,7 +1,9 @@
 import 'dart:developer' as developer;
 
-import '../../network/network.dart';
-import '../../protobufs-build/client_to_server.pb.dart';
+import 'package:forget_about_it/protobufs-build/client_server/v1/client_to_server.pbgrpc.dart';
+import 'package:forget_about_it/protobufs-build/client_server/v1/server_to_client.pb.dart';
+import 'package:grpc/grpc_web.dart';
+
 import '../../screens/login/submit_type.dart';
 import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -24,25 +26,18 @@ Future<Result<()>> update(
   Uri remoteUri,
   SubmitType submitType,
 ) async {
-  InsecureMessage d = switch (submitType) {
-    TwelveWords(:final twelveWords) => InsecureMessage(
-        getToken: GetToken(
-          twelveWords: twelveWords.toList(),
-        ),
+  final client =
+      await ForgetAboutItServiceClient(GrpcWebClientChannel.xhr(remoteUri))
+          .getToken(switch (submitType) {
+    TwelveWords(:final twelveWords) => GetTokenRequest(
+        twelveWords: twelveWords.toList(),
       ),
-    Token(:final token) => InsecureMessage(
-        getToken: GetToken(token: token),
-      ),
-  };
-  final remoteServer = RemoteServerWithoutToken(
-    remoteHost: remoteUri.toString(),
-    client: client,
-  );
-
-  final token = await remoteServer.getToken(d);
-  final res = switch (token) {
-    Ok(:final value) => (value.token, null),
+    Token(:final token) => GetTokenRequest(token: token),
+  });
+  final res = switch (client) {
+    GetToken(:final token) => (token, null),
     Err(:final value) => (null, value),
+    _ => throw Exception('Unknown Error'),
   };
   if (res.$1 != null) {
     final token = res.$1;

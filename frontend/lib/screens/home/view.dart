@@ -1,5 +1,4 @@
 import '../../future_widget/future_widget.dart';
-import '../../network/interfaces.dart';
 import '../../screens/bulk-edit/view.dart';
 import '../../screens/general-display/show_error.dart';
 import '../../screens/home/model.dart';
@@ -18,9 +17,16 @@ import 'service.dart';
 
 class HomeScreen extends HookConsumerWidget {
   static String location = '/';
-  final FetchDataWithToken remoteServer;
+  final String remoteServer;
+  final String token;
+  final Function() logOut;
 
-  const HomeScreen({super.key, required this.remoteServer});
+  const HomeScreen({
+    super.key,
+    required this.remoteServer,
+    required this.token,
+    required this.logOut,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -55,7 +61,7 @@ class HomeScreen extends HookConsumerWidget {
         ],
       ),
       body: FutureWidget(
-        future: getAllTags(remoteServer),
+        future: getAllTags(token, remoteServer, logOut),
         built: (context, r) => buildDisplay(context, r),
         waiting: (context) => Center(child: CircularProgressIndicator()),
       ),
@@ -64,8 +70,13 @@ class HomeScreen extends HookConsumerWidget {
 
   Widget buildDisplay(BuildContext context, Result<(IList<Tag>, bool)> data) {
     return switch (data) {
-      Ok(value: final d) =>
-        TagsView(remoteServer: remoteServer, canRun: d.$2, tagList: d.$1),
+      Ok(value: final d) => TagsView(
+          token: token,
+          remoteServer: remoteServer,
+          canRun: d.$2,
+          tagList: d.$1,
+          logOut: logOut,
+        ),
       Err(value: final error) => localShowError(context, error),
     };
   }
@@ -77,7 +88,9 @@ class HomeScreen extends HookConsumerWidget {
 }
 
 class TagsView extends HookWidget {
-  final FetchDataWithToken remoteServer;
+  final String remoteServer;
+  final String token;
+  final Function() logOut;
   final IList<Tag> tagList;
   final bool canRun;
 
@@ -86,6 +99,8 @@ class TagsView extends HookWidget {
     required this.remoteServer,
     required this.canRun,
     required this.tagList,
+    required this.token,
+    required this.logOut,
   });
 
   @override
@@ -98,7 +113,7 @@ class TagsView extends HookWidget {
         Expanded(
           child: RefreshIndicator(
             onRefresh: () async {
-              (await getAllTags(remoteServer)).match(onErr: (e) {
+              (await getAllTags(token, remoteServer, logOut)).match(onErr: (e) {
                 showError(context, e.toString());
               }, onOk: (v) {
                 final (tags, canRun) = v;

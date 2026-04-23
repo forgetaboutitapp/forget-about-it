@@ -2,18 +2,21 @@
 set -e
 pwd
 dart pub global activate fastforge 
-sudo apt install locate
+if [[ "$(uname -s)" == *"Linux"* ]]; then sudo apt install locate; fi
 maindir=$(pwd)
-go run ./generate.go
-cd frontend
+
+# Install tools
+# go install github.com/bufbuild/buf/cmd/buf@latest
+
+# Generate protobufs
+cd "$maindir/../protobufs"
+buf generate --template buf.gen.go.yaml    # Go + connect-go (no well-known types)
+buf generate --template buf.gen.dart.yaml  # Dart (includes timestamp.pb.dart etc.)
+
+# Build frontend
+cd "$maindir/frontend"
 dart run build_runner build -d
-cd ..
-pwd
-ls -lha
-go run ./generate.go
-cd ./frontend
 flutter build web --release --wasm
-flutter build apk --release
 echo "finished building"
 mkdir ../server/web -p
 echo "finished mkdir"
