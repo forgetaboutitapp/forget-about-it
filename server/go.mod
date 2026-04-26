@@ -8,6 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-set v0.1.14
 	github.com/rs/cors v1.11.1
+	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/tetratelabs/wazero v1.9.0
 	github.com/tyler-smith/go-bip39 v1.1.0
 	golang.org/x/net v0.21.0

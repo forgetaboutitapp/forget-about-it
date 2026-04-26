@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
+	"database/sql"
 	"flag"
 	"fmt"
 	"io/fs"
 	"log"
 	"net/http"
 	"path/filepath"
+	"strings"
 
 	"github.com/adrg/xdg"
 	"github.com/forgetaboutitapp/forget-about-it/server"
@@ -20,7 +23,6 @@ import (
 
 func main() {
 	dbLocation := flag.String("location", filepath.Join(xdg.StateHome, "forget-about-it.sqlite3"), "sqlite3 file location")
-	port := flag.Int("port", 8080, "port to host")
 	flag.Parse()
 	server.DBFilename = *dbLocation
 	q, db := dbUtils.GetDB()
@@ -34,7 +36,20 @@ func main() {
 	path, connectHandler := client_serverv1connect.NewForgetAboutItServiceHandler(&do.Server{Db: q, OrigDB: db})
 	http.DefaultServeMux.Handle(path, connectHandler)
 
-	address := fmt.Sprintf(":%d", *port)
+	address, err := q.GetConfigValue(context.Background(), "host")
+	if err != nil {
+		if err == sql.ErrNoRows {
+			address = ":80"
+		} else {
+			panic(err)
+		}
+	}
+	address = strings.TrimSpace(address)
+	address = strings.TrimPrefix(address, "http://")
+	address = strings.TrimPrefix(address, "https://")
+	if address == "" {
+		address = ":80"
+	}
 	fmt.Printf("Starting server on address %s\n", address)
 	corsOptions := cors.Options{
 		AllowPrivateNetwork: true,

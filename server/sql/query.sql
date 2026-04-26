@@ -103,3 +103,10 @@ SELECT * from Logins where index_id=?;
 
 -- name: DeleteLoginsFromLogs :exec
 DELETE FROM Logs_Logins WHERE login_uuid=?;
+
+-- name: GetConfigValue :one
+SELECT value FROM config WHERE key=?;
+
+-- name: SetConfigValue :exec
+INSERT INTO config (key, value) VALUES (?, ?)
+ON CONFLICT(key) DO UPDATE SET value=excluded.value;

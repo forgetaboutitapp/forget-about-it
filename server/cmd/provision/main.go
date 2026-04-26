@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"errors"
 	"flag"
 	"fmt"
@@ -10,7 +11,9 @@ import (
 	"math"
 	"math/big"
 	mathrand "math/rand/v2"
+	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/adrg/xdg"
@@ -19,24 +22,34 @@ import (
 	"github.com/forgetaboutitapp/forget-about-it/server/pkg/sql_queries"
 	uuidUtils "github.com/forgetaboutitapp/forget-about-it/server/pkg/uuid_utils"
 	"github.com/google/uuid"
+	"github.com/skip2/go-qrcode"
 )
 
 var ErrUserGeneration = errors.New("user generation error")
 
 var ErrMnemonicGeneration = errors.New("mnemonic generation error")
+var ErrHostRequired = errors.New("host is required: pass -host or configure it in db")
 
 func main() {
+	ctx := context.Background()
 	dbLocation := flag.String("location", filepath.Join(xdg.StateHome, "forget-about-it.sqlite3"), "sqlite3 file location")
+	host := flag.String("host", "", "server host")
 	flag.Parse()
 	server.DBFilename = *dbLocation
 	fmt.Println(server.DBFilename)
-	db, err := dbUtils.OpenDatabase(context.Background())
+	db, err := dbUtils.OpenDatabase(ctx)
 	if err != nil {
 		panic(err)
 	}
 	q := sql_queries.New(db)
+	address, err := SetOrGetHost(ctx, q, *host)
+	if err != nil {
+		slog.Error("cannot save host", "err", err)
+		os.Exit(1)
+	}
+	address = strings.TrimPrefix(address, "http://")
 
-	adminUser, err := q.GetUser(context.Background(), 0)
+	adminUser, err := q.GetUser(ctx, 0)
 	if err != nil {
 		panic(err)
 	}
@@ -49,6 +62,9 @@ func main() {
 		}
 		fmt.Printf("Your 12 word mnemonic is: %s\n", mnemonic)
 		fmt.Printf("Your copyable login is: %s\n", id)
+		if err := PrintQRCode(fmt.Sprintf("%s;%s", address, id)); err != nil {
+			panic(err)
+		}
 	} else if len(adminUser) == 1 {
 		mnemonic, id, err := AddLogin(context.TODO(), q, adminUser[0])
 		if err != nil {
@@ -56,7 +72,37 @@ func main() {
 		}
 		fmt.Printf("Your 12 word mnemonic is: %s\n", mnemonic)
 		fmt.Printf("Your copyable login is: %s\n", id)
+		if err := PrintQRCode(fmt.Sprintf("%s;%s", address, id)); err != nil {
+			panic(err)
+		}
 	}
+}
+
+func SetOrGetHost(ctx context.Context, q *sql_queries.Queries, hostFlagValue string) (string, error) {
+	hostFlagValue = strings.TrimSpace(hostFlagValue)
+	if hostFlagValue != "" {
+		err := q.SetConfigValue(ctx, sql_queries.SetConfigValueParams{
+			Key:   "host",
+			Value: hostFlagValue,
+		})
+		if err != nil {
+			return "", err
+		}
+		return hostFlagValue, nil
+	}
+
+	host, err := q.GetConfigValue(ctx, "host")
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrHostRequired
+	}
+	if err != nil {
+		return "", err
+	}
+	host = strings.TrimSpace(host)
+	if host == "" {
+		return "", ErrHostRequired
+	}
+	return host, nil
 }
 
 func AddUser(q *sql_queries.Queries) (string, string, error) {
@@ -101,4 +147,24 @@ func AddLogin(ctx context.Context, q *sql_queries.Queries, id int64) (string, st
 		return "", "", errors.Join(ErrMnemonicGeneration, err)
 	}
 	return m, newLoginUuid.String(), nil
+}
+
+func PrintQRCode(value string) error {
+	qr, err := qrcode.New(value, qrcode.Medium)
+	if err != nil {
+		return err
+	}
+	bitmap := qr.Bitmap()
+	fmt.Println("Scan QR:")
+	for _, row := range bitmap {
+		for _, isBlack := range row {
+			if isBlack {
+				fmt.Print("##")
+			} else {
+				fmt.Print("  ")
+			}
+		}
+		fmt.Println()
+	}
+	return nil
 }
