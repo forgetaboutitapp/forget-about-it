@@ -1,0 +1,29 @@
+name: Prepare protobufs
+description: Clone protobuf definitions and generate Go and Dart sources.
+
+runs:
+  using: composite
+  steps:
+    - name: Install protobuf generators
+      shell: bash
+      run: |
+        go install github.com/bufbuild/buf/cmd/buf@v1.58.0
+        dart pub global activate protoc_plugin
+        echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+        echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+
+    - name: Clone protobuf definitions
+      shell: bash
+      run: |
+        protobuf_dir="${GITHUB_WORKSPACE}/../protobufs"
+        if [ ! -d "$protobuf_dir/.git" ]; then
+          git clone --depth 1 https://github.com/forgetaboutitapp/protobufs "$protobuf_dir"
+        fi
+
+    - name: Generate protobuf sources
+      shell: bash
+      run: |
+        export PATH="$(go env GOPATH)/bin:$HOME/.pub-cache/bin:$PATH"
+        cd "${GITHUB_WORKSPACE}/../protobufs"
+        buf generate --template buf.gen.go.yaml
+        buf generate --template buf.gen.dart.yaml

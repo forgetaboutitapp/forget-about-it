@@ -1,9 +1,9 @@
 import 'dart:developer' as developer;
 
 import 'package:forget_about_it/protobufs-build/client_server/v1/client_to_server.pbgrpc.dart';
-import 'package:grpc/grpc_web.dart';
 
 import '../../fn/fn.dart';
+import '../../interop/grpc_channel.dart';
 import '../../protobufs-build/google/protobuf/timestamp.pb.dart';
 import '../../screens/stats/models/stats_data.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
@@ -18,7 +18,7 @@ Future<Result<StatsData>> getStats(String remoteHost, String token,
     'tzOffset: $tzOffset start time: ${Timestamp.fromDateTime(toDay(startingDate).toUtc())}, ${Timestamp.fromDateTime(toDay(startingDate).toLocal())}, ${Timestamp.fromDateTime(toDay(startingDate).toUtc()).seconds - (Timestamp.fromDateTime(toDay(startingDate).toLocal())).seconds}',
   );
   final client = await ForgetAboutItServiceClient(
-          GrpcWebClientChannel.xhr(Uri.parse(remoteHost)))
+          createGrpcChannel(Uri.parse(remoteHost)))
       .getStats(GetStatsRequest(token: token));
   if (client.hasError()) {
     return Err(Exception(client.error));

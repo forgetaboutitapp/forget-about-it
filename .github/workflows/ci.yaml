@@ -16,29 +16,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.25'  # Change to your desired Go version
+          go-version-file: server/go.mod
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           flutter-version: 3.35.0
+      - name: Prepare protobufs
+        uses: ./.github/actions/prepare-protobufs
       - name: Run Go tests
         run: |
           pwd
-          cd ..
-          git clone  --depth 1 https://github.com/forgetaboutitapp/protobufs
-          sudo apt-get install -y protobuf-compiler
-          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest    
-          sudo apt install just
-          dart pub global activate protoc_plugin
           go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.28.0
 
-          cd protobufs
-          just
-          cd ..
-          cd forget-about-it
           chmod +x build.sh
           ./build.sh "${{ github.workspace }}"
           cd frontend
@@ -56,24 +48,16 @@ jobs:
           channel: stable
           flutter-version: 3.35.0
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.25'  # Change to your desired Go version
+          go-version-file: server/go.mod
+      - name: Prepare protobufs
+        uses: ./.github/actions/prepare-protobufs
       - name: Build provisioning app
         run: |
           pwd
-          cd ..
-          git clone  --depth 1 https://github.com/forgetaboutitapp/protobufs
-          sudo apt-get install -y protobuf-compiler
-          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest    
-          sudo apt install just
-          dart pub global activate protoc_plugin
           go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.28.0
 
-          cd protobufs
-          just
-          cd ..
-          cd forget-about-it
           chmod +x build.sh
           ./build.sh "${{ github.workspace }}"
       - name: Upload release artifacts

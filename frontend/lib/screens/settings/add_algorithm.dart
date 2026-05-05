@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:forget_about_it/protobufs-build/client_server/v1/client_to_server.pbgrpc.dart';
-import 'package:grpc/grpc_web.dart';
 
+import '../../interop/grpc_channel.dart';
 import '../../screens/general-display/show_error.dart';
 import '../../screens/settings/models/remote_algorithm.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
@@ -138,8 +138,7 @@ class AddAlgorithm extends HookWidget {
                         if (shouldUpload) {
                           isUploading.value = true;
                           final p = await ForgetAboutItServiceClient(
-                                  GrpcWebClientChannel.xhr(
-                                      Uri.parse(remoteServer)))
+                                  createGrpcChannel(Uri.parse(remoteServer)))
                               .uploadAlgorithm(
                                   client_to_server.UploadAlgorithmRequest(
                             algorithm: data,

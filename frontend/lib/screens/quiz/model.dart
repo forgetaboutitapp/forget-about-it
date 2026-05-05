@@ -1,12 +1,12 @@
 import 'package:forget_about_it/protobufs-build/client_server/v1/client_to_server.pbgrpc.dart';
 import 'package:forget_about_it/protobufs-build/client_server/v1/server_to_client.pb.dart';
-import 'package:grpc/grpc_web.dart';
 
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../fn/fn.dart';
+import '../../interop/grpc_channel.dart';
 import '../../protobufs-build/client_server/v1/server_to_client.pbenum.dart'
     as server_to_client_enums;
 
@@ -54,7 +54,7 @@ class QuizQuestions extends _$QuizQuestions {
     _state = Ok(QuizQuestionState.waiting());
     ref.invalidateSelf();
     final client = await ForgetAboutItServiceClient(
-            GrpcWebClientChannel.xhr(Uri.parse(host)))
+            createGrpcChannel(Uri.parse(host)))
         .gradeQuestion(GradeQuestionRequest(
             token: token, questionid: questionID, correct: correct));
     int? whenNextQuestionDue;
@@ -108,7 +108,7 @@ class QuizQuestions extends _$QuizQuestions {
     ref.invalidateSelf();
 
     final client = await ForgetAboutItServiceClient(
-            GrpcWebClientChannel.xhr(Uri.parse(host)))
+            createGrpcChannel(Uri.parse(host)))
         .getNextQuestion(GetNextQuestionRequest(
             token: token,
             tags: tagsQuery.toIList(),

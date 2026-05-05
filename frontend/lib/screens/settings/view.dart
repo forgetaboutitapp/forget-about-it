@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:developer' as dev;
 
 import 'package:forget_about_it/protobufs-build/client_server/v1/client_to_server.pbgrpc.dart';
-import 'package:grpc/grpc_web.dart';
 
+import '../../interop/grpc_channel.dart';
 import '../../screens/general-display/show_error.dart';
 import '../../screens/settings/add_algorithm.dart';
 import '../../screens/settings/models/model.dart';
@@ -109,8 +109,7 @@ class SettingsScreen extends HookConsumerWidget {
                             onChanged: (int? v) async {
                               stillWaitingForRemoteServer.value = true;
                               final client = await ForgetAboutItServiceClient(
-                                      GrpcWebClientChannel.xhr(
-                                          Uri.parse(remoteServer)))
+                                      createGrpcChannel(Uri.parse(remoteServer)))
                                   .getRemoteSettings(
                                       GetRemoteSettingsRequest(token: token));
                               if (client.hasError()) {
@@ -133,8 +132,7 @@ class SettingsScreen extends HookConsumerWidget {
                                 : () async {
                                     final client =
                                         await ForgetAboutItServiceClient(
-                                                GrpcWebClientChannel.xhr(
-                                                    Uri.parse(remoteServer)))
+                                                createGrpcChannel(Uri.parse(remoteServer)))
                                             .removeAlgorithm(
                                       RemoveAlgorithmRequest(
                                           token: token,
@@ -219,8 +217,7 @@ class SettingsScreen extends HookConsumerWidget {
                                       : () async {
                                           final res =
                                               await ForgetAboutItServiceClient(
-                                                      GrpcWebClientChannel.xhr(
-                                                          Uri.parse(
+                                                      createGrpcChannel(Uri.parse(
                                                               remoteServer)))
                                                   .removeLogin(
                                             RemoveLoginRequest(

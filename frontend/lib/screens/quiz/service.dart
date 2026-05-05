@@ -1,7 +1,7 @@
 import 'package:forget_about_it/protobufs-build/client_server/v1/client_to_server.pbgrpc.dart';
 import 'package:forget_about_it/protobufs-build/client_server/v1/server_to_client.pb.dart';
-import 'package:grpc/grpc_web.dart';
 
+import '../../interop/grpc_channel.dart';
 import '../../screens/quiz/model.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 
@@ -16,7 +16,7 @@ Future<Result<QuizQuestionStateData>> getNextQuestion(
     ISet<String> tagsQuery,
     bool getNewQuestion) async {
   final client = await ForgetAboutItServiceClient(
-          GrpcWebClientChannel.xhr(Uri.parse(remoteHost)))
+          createGrpcChannel(Uri.parse(remoteHost)))
       .getNextQuestion(GetNextQuestionRequest(
           token: token,
           tags: tagsQuery.toList(),

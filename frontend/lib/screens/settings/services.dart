@@ -1,6 +1,6 @@
 import 'package:forget_about_it/protobufs-build/client_server/v1/client_to_server.pbgrpc.dart';
-import 'package:grpc/grpc_web.dart';
 
+import '../../interop/grpc_channel.dart';
 import '../../screens/settings/models/remote_algorithm.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 
@@ -11,7 +11,7 @@ import 'models/remote_settings.dart';
 Future<Result<RemoteSettings>> getRemoteSettings(
     String remoteHost, String token, Function logOut) async {
   final client = await ForgetAboutItServiceClient(
-          GrpcWebClientChannel.xhr(Uri.parse(remoteHost)))
+          createGrpcChannel(Uri.parse(remoteHost)))
       .getRemoteSettings(GetRemoteSettingsRequest(
     token: token,
   ));

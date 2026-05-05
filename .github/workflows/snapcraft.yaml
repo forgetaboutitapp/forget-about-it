@@ -37,11 +37,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y unzip
           sudo snap install snapcraft --classic
-          go install github.com/bufbuild/buf/cmd/buf@v1.58.0
           go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0
 
       - name: Add Go bin to PATH
         run: echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Prepare protobufs
+        uses: ./.github/actions/prepare-protobufs
 
       - name: Publish snap
         env:

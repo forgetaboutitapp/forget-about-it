@@ -38,6 +38,14 @@ jobs:
           channel: stable
           flutter-version: 3.41.7
 
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+
+      - name: Prepare protobufs
+        uses: ./.github/actions/prepare-protobufs
+
       - name: Build Android APK
         env:
           KEYSTORE_BASE64: ${{ secrets.APP_KEYSTORE_BASE64 }}

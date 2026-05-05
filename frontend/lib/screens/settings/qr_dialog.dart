@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:forget_about_it/protobufs-build/client_server/v1/client_to_server.pbgrpc.dart';
-import 'package:grpc/grpc_web.dart';
 
+import '../../interop/grpc_channel.dart';
 import '../../screens/login/view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -27,8 +27,7 @@ class QRDialog extends HookWidget {
     useEffect(() {
       bool isCancelled = false;
 
-      ForgetAboutItServiceClient(
-              GrpcWebClientChannel.xhr(Uri.parse(remoteHost)))
+      ForgetAboutItServiceClient(createGrpcChannel(Uri.parse(remoteHost)))
           .generateNewToken(GenerateNewTokenRequest(
         token: token,
       ))
@@ -41,7 +40,7 @@ class QRDialog extends HookWidget {
         qrCodeData.value = res.newUuid;
         while (!isCancelled) {
           final a = await ForgetAboutItServiceClient(
-                  GrpcWebClientChannel.xhr(Uri.parse(remoteHost)))
+                  createGrpcChannel(Uri.parse(remoteHost)))
               .checkNewToken(CheckNewTokenRequest());
           if (a.hasError()) {
             if (context.mounted) {
@@ -60,7 +59,7 @@ class QRDialog extends HookWidget {
       });
       return () async {
         final p = await ForgetAboutItServiceClient(
-                GrpcWebClientChannel.xhr(Uri.parse(remoteHost)))
+                createGrpcChannel(Uri.parse(remoteHost)))
             .deleteNewToken(DeleteNewTokenRequest(
           token: token,
         ));

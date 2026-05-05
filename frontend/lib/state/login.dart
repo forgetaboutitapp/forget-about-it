@@ -2,7 +2,6 @@ import 'dart:developer' as developer;
 
 import 'package:forget_about_it/protobufs-build/client_server/v1/client_to_server.pbgrpc.dart';
 import 'package:forget_about_it/protobufs-build/client_server/v1/server_to_client.pb.dart';
-import 'package:grpc/grpc_web.dart';
 
 import '../../screens/login/submit_type.dart';
 import 'package:flutter/foundation.dart';
@@ -11,6 +10,7 @@ import 'package:hive_ce/hive.dart';
 import 'package:http/http.dart' as http;
 import '../data/constants.dart';
 import '../fn/fn.dart';
+import '../interop/grpc_channel.dart';
 
 part 'login.freezed.dart';
 
@@ -26,9 +26,8 @@ Future<Result<()>> update(
   Uri remoteUri,
   SubmitType submitType,
 ) async {
-  final client =
-      await ForgetAboutItServiceClient(GrpcWebClientChannel.xhr(remoteUri))
-          .getToken(switch (submitType) {
+  final client = await ForgetAboutItServiceClient(createGrpcChannel(remoteUri))
+      .getToken(switch (submitType) {
     TwelveWords(:final twelveWords) => GetTokenRequest(
         twelveWords: twelveWords.toList(),
       ),

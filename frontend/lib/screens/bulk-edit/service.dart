@@ -1,8 +1,8 @@
 import 'package:forget_about_it/protobufs-build/client_server/v1/client_to_server.pbgrpc.dart';
 import 'package:forget_about_it/protobufs-build/client_server/v1/server_to_client.pb.dart';
-import 'package:grpc/grpc_web.dart';
 
 import '../../fn/fn.dart';
+import '../../interop/grpc_channel.dart';
 import '../../protobufs-build/client_server/v1/server_to_client.pb.dart'
     as server_to_client;
 import '../../screens/bulk-edit/parse.dart';
@@ -26,7 +26,7 @@ Future<Result<String>> getAllQuestions(
     required String remoteHost,
     required Function() logOut}) async {
   final client = await ForgetAboutItServiceClient(
-          GrpcWebClientChannel.xhr(Uri.parse(remoteHost)))
+          createGrpcChannel(Uri.parse(remoteHost)))
       .getAllQuestions(GetAllQuestionsRequest(token: token));
   return switch (client) {
     GetAllQuestions(:var flashcards) =>
@@ -56,7 +56,7 @@ Future<Result<void>> postAllQuestions({
   required IList<model.Flashcard> flashcards,
 }) async {
   final client = await ForgetAboutItServiceClient(
-          GrpcWebClientChannel.xhr(Uri.parse(remoteHost)))
+          createGrpcChannel(Uri.parse(remoteHost)))
       .postAllQuestions(PostAllQuestionsRequest(
           token: token,
           flashcards: flashcards
