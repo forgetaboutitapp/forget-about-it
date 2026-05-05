@@ -1,0 +1,54 @@
+name: Snapcraft Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.35.0
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unzip
+          sudo snap install snapcraft --classic
+          go install github.com/bufbuild/buf/cmd/buf@v1.58.0
+          go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0
+
+      - name: Add Go bin to PATH
+        run: echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Publish snap
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+          SNAP_RELEASE_CHANNEL: stable
+          SNAP_VERSION: ${{ github.ref_name }}
+        run: |
+          chmod +x ./deploy-to-snap.sh
+          export SNAP_VERSION="${SNAP_VERSION#v}"
+          ./deploy-to-snap.sh

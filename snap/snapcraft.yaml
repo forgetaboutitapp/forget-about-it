@@ -1,0 +1,37 @@
+name: forget-about-it
+base: core24
+version: "1.0.0"
+summary: Spaced repetition server
+description: |
+  Forget About It server and provisioning utilities packaged as a snap.
+grade: stable
+confinement: strict
+platforms:
+  amd64:
+
+apps:
+  server:
+    command: bin/server -location $SNAP_COMMON/state/forget-about-it.sqlite3
+    daemon: simple
+    install-mode: disable
+    restart-condition: on-failure
+    environment:
+      XDG_STATE_HOME: $SNAP_COMMON/state
+    plugs:
+      - network
+      - network-bind
+  provision:
+    command: bin/provision -location $SNAP_COMMON/state/forget-about-it.sqlite3
+    environment:
+      XDG_STATE_HOME: $SNAP_COMMON/state
+    plugs:
+      - network
+
+parts:
+  forget-about-it:
+    plugin: nil
+    source: snap/local
+    override-build: |
+      craftctl default
+      mkdir -p "$CRAFT_PART_INSTALL/bin"
+      cp -a "$CRAFT_PART_SRC/bin/." "$CRAFT_PART_INSTALL/bin/"
