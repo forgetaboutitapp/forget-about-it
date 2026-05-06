@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"os"
 	"path"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -26,6 +28,9 @@ var ErrCantDoMigrations = errors.New("cannot do migrations")
 
 func OpenDatabase(ctx context.Context) (*sql.DB, error) {
 	slog.Info("Opening DB", "db file", server.DBFilename)
+	if err := ensureDatabaseDir(server.DBFilename); err != nil {
+		return nil, errors.Join(ErrCantOpen, err)
+	}
 	db, err := sql.Open("sqlite", server.DBFilename)
 	if err != nil {
 		return nil, errors.Join(ErrCantOpen, err)
@@ -45,6 +50,18 @@ func OpenDatabase(ctx context.Context) (*sql.DB, error) {
 	}
 	return db, nil
 }
+
+func ensureDatabaseDir(filename string) error {
+	if filename == "" || filename == ":memory:" {
+		return nil
+	}
+	dir := filepath.Dir(filename)
+	if dir == "." || dir == "" {
+		return nil
+	}
+	return os.MkdirAll(dir, 0o700)
+}
+
 func enableForeignKeys(ctx context.Context, db *sql.DB) error {
 	_, err := db.ExecContext(ctx, "PRAGMA foreign_keys=ON")
 	return err
