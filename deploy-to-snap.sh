@@ -5,8 +5,8 @@ usage() {
   cat <<'EOF'
 Usage: ./deploy-to-snap.sh [channel]
 
-Build the Linux amd64 server and provision executables, package them into the
-`forget-about-it` snap, and upload that snap to Snapcraft.
+Build the Linux server and provision executables, package them into
+`forget-about-it` snaps, and upload those snaps to Snapcraft.
 
 Arguments:
   channel                 Snap release channel. Default: edge
@@ -14,6 +14,7 @@ Arguments:
 Environment variables:
   SNAP_RELEASE_CHANNEL    Release channel override. Default: edge
   SNAP_VERSION            Optional snap version override
+  SNAP_ARCHES             Space-separated Debian architectures. Default: amd64 arm64
   SNAPCRAFT_STORE_CREDENTIALS
                           Exported Snapcraft credentials for non-interactive auth
 
@@ -55,13 +56,13 @@ server_dir="$script_dir/server"
 snap_local_dir="$script_dir/snap/local"
 snapcraft_yaml="$script_dir/snap/snapcraft.yaml"
 channel="${SNAP_RELEASE_CHANNEL:-${1:-edge}}"
+snap_arches="${SNAP_ARCHES:-amd64 arm64}"
 
 pubspec_version=$(grep '^version:' "$frontend_dir/pubspec.yaml" | head -n1 | awk '{print $2}')
 snap_version="${SNAP_VERSION:-${pubspec_version/+/-}}"
 snap_output_dir="$script_dir/.snap-output"
 
 mkdir -p "$snap_local_dir/bin" "$snap_output_dir"
-rm -f "$snap_local_dir/bin/server" "$snap_local_dir/bin/provision"
 rm -f "$snap_output_dir"/forget-about-it_*.snap
 
 pushd "$protobuf_dir" >/dev/null
@@ -80,8 +81,6 @@ cp -R "$frontend_dir/build/web/." "$server_dir/web/"
 
 pushd "$server_dir" >/dev/null
 sqlc generate
-GOOS=linux GOARCH=amd64 go build -o "$snap_local_dir/bin/server" ./cmd/server
-GOOS=linux GOARCH=amd64 go build -o "$snap_local_dir/bin/provision" ./cmd/provision
 popd >/dev/null
 
 original_snapcraft_yaml=$(mktemp)
@@ -93,13 +92,37 @@ pushd "$script_dir" >/dev/null
 if [[ -n "${SNAPCRAFT_STORE_CREDENTIALS:-}" ]]; then
   export SNAPCRAFT_STORE_CREDENTIALS
 fi
-snapcraft --destructive-mode --output "$snap_output_dir"
-snap_file=$(ls -t "$snap_output_dir"/forget-about-it_*.snap | head -n1)
-if [[ -z "$snap_file" ]]; then
-  echo "snapcraft pack did not produce a snap file" >&2
-  exit 1
-fi
-snapcraft upload "$snap_file" --release "$channel"
+
+built_snaps=()
+for snap_arch in $snap_arches; do
+  case "$snap_arch" in
+    amd64) go_arch=amd64 ;;
+    arm64) go_arch=arm64 ;;
+    *)
+      echo "Unsupported snap architecture: $snap_arch" >&2
+      exit 1
+      ;;
+  esac
+
+  rm -f "$snap_local_dir/bin/server" "$snap_local_dir/bin/provision"
+  pushd "$server_dir" >/dev/null
+  GOOS=linux GOARCH="$go_arch" go build -o "$snap_local_dir/bin/server" ./cmd/server
+  GOOS=linux GOARCH="$go_arch" go build -o "$snap_local_dir/bin/provision" ./cmd/provision
+  popd >/dev/null
+
+  snapcraft clean
+  snap_file="$snap_output_dir/forget-about-it_${snap_version}_${snap_arch}.snap"
+  snapcraft --destructive-mode --build-for="$snap_arch" --output "$snap_file"
+  if [[ ! -f "$snap_file" ]]; then
+    echo "snapcraft did not produce $snap_file" >&2
+    exit 1
+  fi
+  built_snaps+=("$snap_file")
+done
+
+for snap_file in "${built_snaps[@]}"; do
+  snapcraft upload "$snap_file" --release "$channel"
+done
 popd >/dev/null
 
-echo "Published $snap_file to channel $channel"
+echo "Published ${built_snaps[*]} to channel $channel"
