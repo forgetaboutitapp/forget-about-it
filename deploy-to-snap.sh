@@ -93,7 +93,7 @@ pushd "$script_dir" >/dev/null
 if [[ -n "${SNAPCRAFT_STORE_CREDENTIALS:-}" ]]; then
   export SNAPCRAFT_STORE_CREDENTIALS
 fi
-snapcraft pack . --destructive-mode --output "$snap_output_dir"
+snapcraft --destructive-mode --output "$snap_output_dir"
 snap_file=$(ls -t "$snap_output_dir"/forget-about-it_*.snap | head -n1)
 if [[ -z "$snap_file" ]]; then
   echo "snapcraft pack did not produce a snap file" >&2
