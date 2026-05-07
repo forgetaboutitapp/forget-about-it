@@ -30,9 +30,9 @@ jobs:
         run: |
           pwd
           go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.28.0
+          go install github.com/magefile/mage@v1.15.0
 
-          chmod +x build.sh
-          ./build.sh "${{ github.workspace }}"
+          mage build
           cd frontend
           flutter test
 
@@ -57,9 +57,9 @@ jobs:
         run: |
           pwd
           go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.28.0
+          go install github.com/magefile/mage@v1.15.0
 
-          chmod +x build.sh
-          ./build.sh "${{ github.workspace }}"
+          mage build
       - name: Upload release artifacts
         uses: softprops/action-gh-release@v2
         with:

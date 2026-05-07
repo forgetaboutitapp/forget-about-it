@@ -112,11 +112,15 @@ for snap_arch in $snap_arches; do
 
   snapcraft clean
   snap_file="$snap_output_dir/forget-about-it_${snap_version}_${snap_arch}.snap"
-  snapcraft --destructive-mode --build-for="$snap_arch" --output "$snap_file"
-  if [[ ! -f "$snap_file" ]]; then
-    echo "snapcraft did not produce $snap_file" >&2
+  snapcraft --destructive-mode --build-for="$snap_arch"
+  
+  local_snap_file="forget-about-it_${snap_version}_${snap_arch}.snap"
+  if [[ ! -f "$local_snap_file" ]]; then
+    echo "snapcraft did not produce $local_snap_file" >&2
     exit 1
   fi
+  
+  mv "$local_snap_file" "$snap_file"
   built_snaps+=("$snap_file")
 done
 
