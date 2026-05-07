@@ -1,7 +1,6 @@
 import 'dart:developer' as developer;
 
 import 'package:forget_about_it/protobufs-build/client_server/v1/client_to_server.pbgrpc.dart';
-import 'package:forget_about_it/protobufs-build/client_server/v1/server_to_client.pb.dart';
 
 import '../../screens/login/submit_type.dart';
 import 'package:flutter/foundation.dart';
@@ -26,25 +25,27 @@ Future<Result<()>> update(
   Uri remoteUri,
   SubmitType submitType,
 ) async {
-  final client = await ForgetAboutItServiceClient(createGrpcChannel(remoteUri))
+  final response = await ForgetAboutItServiceClient(createGrpcChannel(remoteUri))
       .getToken(switch (submitType) {
     TwelveWords(:final twelveWords) => GetTokenRequest(
         twelveWords: twelveWords.toList(),
       ),
     Token(:final token) => GetTokenRequest(token: token),
   });
-  final res = switch (client) {
-    GetToken(:final token) => (token, null),
-    Err(:final value) => (null, value),
-    _ => throw Exception('Unknown Error'),
-  };
-  if (res.$1 != null) {
-    final token = res.$1;
+
+  if (response.hasOk()) {
+    final token = response.ok.token;
     Hive.box(localSettingsHiveBox).put(localSettingsHiveLoginToken, token);
     Hive.box(localSettingsHiveBox).put(localSettingsHiveRemoteHost,
         '${remoteUri.scheme}://${remoteUri.host}:${remoteUri.port}');
     return Ok(());
   }
-  developer.log('ret: $res');
-  return Err(res.$2!);
+
+  if (response.hasError()) {
+    developer.log('getToken error: ${response.error}');
+    return Err(Exception(response.error.error));
+  }
+
+  developer.log('getToken returned no result: $response');
+  return Err(Exception('Server Error'));
 }
