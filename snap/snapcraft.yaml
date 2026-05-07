@@ -16,8 +16,8 @@ apps:
   server:
     command: bin/server -location $SNAP_COMMON/state/forget-about-it.sqlite3
     daemon: simple
-    install-mode: disable
-    restart-condition: on-failure
+    restart-condition: always
+    restart-delay: 5s
     environment:
       XDG_STATE_HOME: $SNAP_COMMON/state
     plugs:
