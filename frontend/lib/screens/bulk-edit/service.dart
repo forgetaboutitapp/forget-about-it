@@ -1,5 +1,4 @@
 import 'package:forget_about_it/protobufs-build/client_server/v1/client_to_server.pbgrpc.dart';
-import 'package:forget_about_it/protobufs-build/client_server/v1/server_to_client.pb.dart';
 
 import '../../fn/fn.dart';
 import '../../interop/grpc_channel.dart';
@@ -28,25 +27,31 @@ Future<Result<String>> getAllQuestions(
   final client = await ForgetAboutItServiceClient(
           createGrpcChannel(Uri.parse(remoteHost)))
       .getAllQuestions(GetAllQuestionsRequest(token: token));
-  return switch (client) {
-    GetAllQuestions(:var flashcards) =>
-      Result.safe(() => '$_originalText\n${unparse(
-            flashcards
-                .map(
-                  (e) => model.Flashcard(
-                    id: e.id,
-                    question: e.question,
-                    answer: e.answer,
-                    explanation: e.explanation,
-                    memoHint: e.memoHint,
-                    tags: e.tags.toIList(),
-                  ),
-                )
-                .toIList(),
-          )}'),
-    Err(:final value) => Err(value),
-    var v => Err(Exception(v.toString())),
-  };
+  if (client.hasError()) {
+    if (client.error.shouldLogOut) {
+      logOut();
+    }
+    return Err(Exception(client.error.error));
+  }
+
+  if (!client.hasOk()) {
+    return Err(Exception('Server Error'));
+  }
+
+  return Result.safe(() => '$_originalText\n${unparse(
+        client.ok.flashcards
+            .map(
+              (e) => model.Flashcard(
+                id: e.id,
+                question: e.question,
+                answer: e.answer,
+                explanation: e.explanation,
+                memoHint: e.memoHint,
+                tags: e.tags.toIList(),
+              ),
+            )
+            .toIList(),
+      )}');
 }
 
 Future<Result<void>> postAllQuestions({
@@ -71,9 +76,16 @@ Future<Result<void>> postAllQuestions({
                 ),
               )
               .toList()));
-  return switch (client) {
-    PostAllQuestions() => Ok(null),
-    Err(:final value) => Err(value),
-    var v => Err(Exception(v.toString())),
-  };
+  if (client.hasError()) {
+    if (client.error.shouldLogOut) {
+      logOut();
+    }
+    return Err(Exception(client.error.error));
+  }
+
+  if (!client.hasOk()) {
+    return Err(Exception('Server Error'));
+  }
+
+  return Ok(null);
 }

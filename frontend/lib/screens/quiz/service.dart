@@ -1,5 +1,4 @@
 import 'package:forget_about_it/protobufs-build/client_server/v1/client_to_server.pbgrpc.dart';
-import 'package:forget_about_it/protobufs-build/client_server/v1/server_to_client.pb.dart';
 
 import '../../interop/grpc_channel.dart';
 import '../../screens/quiz/model.dart';
@@ -21,40 +20,40 @@ Future<Result<QuizQuestionStateData>> getNextQuestion(
           token: token,
           tags: tagsQuery.toList(),
           getNewQuestion: getNewQuestion));
-  return switch (client) {
-    GetNextQuestion(
-      :final flashcard,
-      :final typeOfQuestion,
-      :final newQuestions,
-      :final dueQuestions,
-      :final nonDueQuestions
-    ) =>
-      QuizQuestionStateData(
-        id: flashcard.id,
-        question: flashcard.question,
-        answer: flashcard.answer,
-        questionType: switch (typeOfQuestion) {
-          server_to_client_enums
-                .GetNextQuestion_TypeOfQuestion.TYPE_OF_QUESTION_NEW =>
-            QuestionType.newQuestion,
-          server_to_client_enums
-                .GetNextQuestion_TypeOfQuestion.TYPE_OF_QUESTION_DUE =>
-            QuestionType.dueQuestion,
-          server_to_client_enums
-                .GetNextQuestion_TypeOfQuestion.TYPE_OF_QUESTION_NON_DUE =>
-            QuestionType.nonDueQuestion,
-          server_to_client_enums
-                .GetNextQuestion_TypeOfQuestion.TYPE_OF_QUESTION_UNSPECIFIED =>
-            throw UnimplementedError(),
-          server_to_client_enums.GetNextQuestion_TypeOfQuestion() =>
-            throw UnimplementedError(),
-        },
-        newCards: newQuestions,
-        dueCards: dueQuestions,
-        nonDueCards: nonDueQuestions,
-      ),
-    ErrorMessage(:var error, :var shouldLogOut) =>
-      shouldLogOut ? logOut() : Err(Exception(error)),
-    _ => Err(Exception('Server Error')),
-  };
+  if (client.hasError()) {
+    if (client.error.shouldLogOut) {
+      logOut();
+    }
+    return Err(Exception(client.error.error));
+  }
+
+  if (!client.hasOk()) {
+    return Err(Exception('Server Error'));
+  }
+
+  final question = client.ok;
+  return Ok(QuizQuestionStateData(
+    id: question.flashcard.id,
+    question: question.flashcard.question,
+    answer: question.flashcard.answer,
+    questionType: switch (question.typeOfQuestion) {
+      server_to_client_enums
+            .GetNextQuestion_TypeOfQuestion.TYPE_OF_QUESTION_NEW =>
+        QuestionType.newQuestion,
+      server_to_client_enums
+            .GetNextQuestion_TypeOfQuestion.TYPE_OF_QUESTION_DUE =>
+        QuestionType.dueQuestion,
+      server_to_client_enums
+            .GetNextQuestion_TypeOfQuestion.TYPE_OF_QUESTION_NON_DUE =>
+        QuestionType.nonDueQuestion,
+      server_to_client_enums
+            .GetNextQuestion_TypeOfQuestion.TYPE_OF_QUESTION_UNSPECIFIED =>
+        throw UnimplementedError(),
+      server_to_client_enums.GetNextQuestion_TypeOfQuestion() =>
+        throw UnimplementedError(),
+    },
+    newCards: question.newQuestions,
+    dueCards: question.dueQuestions,
+    nonDueCards: question.nonDueQuestions,
+  ));
 }

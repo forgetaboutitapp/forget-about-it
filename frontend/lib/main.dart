@@ -75,7 +75,7 @@ class MainApp extends HookConsumerWidget {
       ),
       GoRoute(
         path: LoginScreen.location,
-        builder: (context, state) => LoginScreen(client: http.Client()),
+        builder: (context, state) => LoginScreen(),
       ),
       GoRoute(
         path: Stats.location,

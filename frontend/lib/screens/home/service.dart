@@ -1,6 +1,5 @@
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:forget_about_it/protobufs-build/client_server/v1/client_to_server.pbgrpc.dart';
-import 'package:forget_about_it/protobufs-build/client_server/v1/server_to_client.pb.dart';
 
 import '../../fn/fn.dart';
 import '../../interop/grpc_channel.dart';
@@ -12,15 +11,21 @@ Future<Result<(IList<model.Tag>, bool)>> getAllTags(
           createGrpcChannel(Uri.parse(remoteHost)))
       .getAllTags(GetAllTagsRequest(token: token));
 
-  return switch (client) {
-    GetAllTags(:var tags, :var canRun) => Ok((
-        tags
-            .map((t) => model.Tag(tag: t.tag, totalQuestions: t.totalQuestions))
-            .toIList(),
-        canRun
-      )),
-    ErrorMessage(:var error, :var shouldLogOut) =>
-      shouldLogOut ? logOut() : Err(Exception(error)),
-    _ => Err(Exception('Server Error')),
-  };
+  if (client.hasError()) {
+    if (client.error.shouldLogOut) {
+      logOut();
+    }
+    return Err(Exception(client.error.error));
+  }
+
+  if (!client.hasOk()) {
+    return Err(Exception('Server Error'));
+  }
+
+  return Ok((
+    client.ok.tags
+        .map((t) => model.Tag(tag: t.tag, totalQuestions: t.totalQuestions))
+        .toIList(),
+    client.ok.canRun,
+  ));
 }

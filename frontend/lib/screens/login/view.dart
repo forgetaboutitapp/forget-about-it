@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../interop/get_url.dart';
-import 'package:http/http.dart' as http;
 
 import 'token_login.dart';
 import 'twelve_words_form.dart';
@@ -11,8 +10,7 @@ enum LoginMethod { twelveWords, token }
 
 class LoginScreen extends HookConsumerWidget {
   static String location = '/login';
-  final http.Client client;
-  const LoginScreen({super.key, required this.client});
+  const LoginScreen({super.key});
   static String? remoteURL = getCurrentLocation();
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -50,11 +48,9 @@ class LoginScreen extends HookConsumerWidget {
                       ),
                       switch (show12Words.value) {
                         LoginMethod.twelveWords => TwelveWordsForm(
-                            client: client,
                             remoteURL: remoteURL,
                           ),
                         LoginMethod.token => TokenLogin(
-                            client: client,
                             remoteURL: remoteURL,
                           ),
                       },

@@ -3,10 +3,8 @@ import 'dart:developer' as developer;
 import 'package:forget_about_it/protobufs-build/client_server/v1/client_to_server.pbgrpc.dart';
 
 import '../../screens/login/submit_type.dart';
-import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:hive_ce/hive.dart';
-import 'package:http/http.dart' as http;
 import '../data/constants.dart';
 import '../fn/fn.dart';
 import '../interop/grpc_channel.dart';
@@ -21,12 +19,12 @@ sealed class LoginReturn with _$LoginReturn {
 }
 
 Future<Result<()>> update(
-  http.Client client,
   Uri remoteUri,
   SubmitType submitType,
 ) async {
-  final response = await ForgetAboutItServiceClient(createGrpcChannel(remoteUri))
-      .getToken(switch (submitType) {
+  final response =
+      await ForgetAboutItServiceClient(createGrpcChannel(remoteUri))
+          .getToken(switch (submitType) {
     TwelveWords(:final twelveWords) => GetTokenRequest(
         twelveWords: twelveWords.toList(),
       ),
