@@ -23,7 +23,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: 3.35.0
+          flutter-version: 3.41.7
       - name: Prepare protobufs
         uses: ./.github/actions/prepare-protobufs
       - name: Run Go tests
@@ -46,7 +46,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: 3.35.0
+          flutter-version: 3.41.7
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
