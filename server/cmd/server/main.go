@@ -64,9 +64,20 @@ func main() {
 		port = p
 	}
 
+	var ips []net.IP
+	ifaces, _ := net.Interfaces()
+	for _, i := range ifaces {
+		addrs, _ := i.Addrs()
+		for _, addr := range addrs {
+			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
+				ips = append(ips, ipnet.IP)
+			}
+		}
+	}
+
 	host, _ := os.Hostname()
 	info := []string{"Forget About It Server"}
-	service, err := mdns.NewMDNSService(host, "_forgetaboutit._tcp", "", "", port, nil, info)
+	service, err := mdns.NewMDNSService(host, "_forgetaboutit._tcp", "", "", port, ips, info)
 	if err != nil {
 		log.Printf("Failed to create mDNS service: %v", err)
 	} else {
@@ -79,12 +90,13 @@ func main() {
 		}
 	}
 
-	fmt.Printf("Starting server on address %s\n", address)
+	listenAddress := fmt.Sprintf(":%d", port)
+	fmt.Printf("Starting server on address %s\n", listenAddress)
 	corsOptions := cors.Options{
 		AllowPrivateNetwork: true,
 		AllowedOrigins:      []string{"*"},
 		AllowedHeaders:      []string{"*"},
 	}
-	log.Fatal(http.ListenAndServe(address, h2c.NewHandler(cors.New(corsOptions).Handler(http.DefaultServeMux), &http2.Server{})))
+	log.Fatal(http.ListenAndServe(listenAddress, h2c.NewHandler(cors.New(corsOptions).Handler(http.DefaultServeMux), &http2.Server{})))
 
 }
