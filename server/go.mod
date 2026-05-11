@@ -6,8 +6,8 @@ require (
 	connectrpc.com/connect v1.19.2
 	github.com/adrg/xdg v0.5.3
 	github.com/google/uuid v1.6.0
+	github.com/grandcat/zeroconf v1.0.0
 	github.com/hashicorp/go-set v0.1.14
-	github.com/hashicorp/mdns v1.0.6
 	github.com/rs/cors v1.11.1
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/tetratelabs/wazero v1.9.0
@@ -18,6 +18,7 @@ require (
 )
 
 require (
+	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/miekg/dns v1.1.55 // indirect

@@ -19,7 +19,7 @@ import (
 	"github.com/forgetaboutitapp/forget-about-it/server/cmd/server/apis/do"
 	dbUtils "github.com/forgetaboutitapp/forget-about-it/server/pkg/db_utils"
 	"github.com/forgetaboutitapp/forget-about-it/server/protobufs-build/client_server/v1/client_serverv1connect"
-	"github.com/hashicorp/mdns"
+	"github.com/grandcat/zeroconf"
 	"github.com/rs/cors"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -64,47 +64,13 @@ func main() {
 		port = p
 	}
 
-	var ips []net.IP
-	ifaces, _ := net.Interfaces()
-	for _, i := range ifaces {
-		addrs, _ := i.Addrs()
-		for _, addr := range addrs {
-			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
-				ips = append(ips, ipnet.IP)
-			}
-		}
-	}
-
 	host, _ := os.Hostname()
-	info := []string{"Forget About It Server"}
-	service, err := mdns.NewMDNSService(host, "_forgetaboutit._tcp", "", "", port, ips, info)
+	zcServer, err := zeroconf.Register(host, "_forgetaboutit._tcp", "local.", port, []string{"txtv=0", "lo=1"}, nil)
 	if err != nil {
-		log.Printf("Failed to create mDNS service: %v", err)
+		log.Printf("Failed to start mDNS server: %v", err)
 	} else {
-		started := 0
-		ifaces, _ := net.Interfaces()
-		for _, iface := range ifaces {
-			if (iface.Flags&net.FlagUp) == 0 || (iface.Flags&net.FlagMulticast) == 0 {
-				continue
-			}
-			iface := iface // capture loop var
-			mdnsServer, err := mdns.NewServer(&mdns.Config{Zone: service, Iface: &iface})
-			if err == nil {
-				defer mdnsServer.Shutdown()
-				started++
-			}
-		}
-		if started == 0 {
-			mdnsServer, err := mdns.NewServer(&mdns.Config{Zone: service})
-			if err != nil {
-				log.Printf("Failed to start default mDNS server: %v", err)
-			} else {
-				defer mdnsServer.Shutdown()
-				fmt.Printf("Registered mDNS service _forgetaboutit._tcp for %s on port %d (default iface)\n", host, port)
-			}
-		} else {
-			fmt.Printf("Registered mDNS service _forgetaboutit._tcp for %s on port %d across %d interfaces\n", host, port, started)
-		}
+		defer zcServer.Shutdown()
+		fmt.Printf("Registered mDNS service _forgetaboutit._tcp for %s on port %d\n", host, port)
 	}
 
 	listenAddress := fmt.Sprintf(":%d", port)
