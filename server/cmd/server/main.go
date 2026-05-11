@@ -81,12 +81,29 @@ func main() {
 	if err != nil {
 		log.Printf("Failed to create mDNS service: %v", err)
 	} else {
-		mdnsServer, err := mdns.NewServer(&mdns.Config{Zone: service})
-		if err != nil {
-			log.Printf("Failed to start mDNS server: %v", err)
+		started := 0
+		ifaces, _ := net.Interfaces()
+		for _, iface := range ifaces {
+			if (iface.Flags&net.FlagUp) == 0 || (iface.Flags&net.FlagMulticast) == 0 {
+				continue
+			}
+			iface := iface // capture loop var
+			mdnsServer, err := mdns.NewServer(&mdns.Config{Zone: service, Iface: &iface})
+			if err == nil {
+				defer mdnsServer.Shutdown()
+				started++
+			}
+		}
+		if started == 0 {
+			mdnsServer, err := mdns.NewServer(&mdns.Config{Zone: service})
+			if err != nil {
+				log.Printf("Failed to start default mDNS server: %v", err)
+			} else {
+				defer mdnsServer.Shutdown()
+				fmt.Printf("Registered mDNS service _forgetaboutit._tcp for %s on port %d (default iface)\n", host, port)
+			}
 		} else {
-			defer mdnsServer.Shutdown()
-			fmt.Printf("Registered mDNS service _forgetaboutit._tcp for %s on port %d\n", host, port)
+			fmt.Printf("Registered mDNS service _forgetaboutit._tcp for %s on port %d across %d interfaces\n", host, port, started)
 		}
 	}
 
