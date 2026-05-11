@@ -7,6 +7,7 @@ import '../../data/keys.dart';
 import '../../fn/fn.dart';
 import '../../state/login.dart';
 import 'submit_type.dart';
+import 'mdns_lookup.dart';
 
 class TokenLogin extends HookConsumerWidget {
   final String? remoteURL;
@@ -35,6 +36,30 @@ class TokenLogin extends HookConsumerWidget {
               decoration: InputDecoration(
                 border: OutlineInputBorder(),
                 labelText: 'Server Host',
+                suffixIcon: defaultTargetPlatform == TargetPlatform.android
+                    ? IconButton(
+                        icon: const Icon(Icons.search),
+                        tooltip: 'Discover via mDNS',
+                        onPressed: () async {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Searching for server on local network...')),
+                          );
+                          final result = await discoverServerViaMdns();
+                          if (!context.mounted) return;
+                          if (result != null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Found server: $result')),
+                            );
+                            urlController.text = result;
+                            urlText.value = result;
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('No server found on local network.')),
+                            );
+                          }
+                        },
+                      )
+                    : null,
               ),
             ),
           ),

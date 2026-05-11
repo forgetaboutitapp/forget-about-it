@@ -20,6 +20,7 @@ import 'screens/login/view.dart';
 import 'screens/home/view.dart';
 import 'screens/settings/view.dart';
 import 'screens/stats/view.dart';
+import 'screens/login/mdns_lookup.dart';
 
 void main() async {
   log('starting');
@@ -27,6 +28,15 @@ void main() async {
   await Hive.initFlutter();
   await Hive.openBox<dynamic>(localSettingsHiveBox);
   usePathUrlStrategySafe();
+  
+  final remoteHost = Hive.box(localSettingsHiveBox).get(localSettingsHiveRemoteHost) as String?;
+  if (remoteHost != null && remoteHost.contains('.local')) {
+    final uri = Uri.tryParse(remoteHost);
+    if (uri != null) {
+      await resolveAndCacheMdnsHost(uri.host);
+    }
+  }
+
   if (!kIsWeb && Platform.isAndroid) {
     await NotificationService().initNotification();
     await AndroidAlarmManager.initialize();

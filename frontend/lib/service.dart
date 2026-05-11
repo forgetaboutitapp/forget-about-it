@@ -6,6 +6,7 @@ import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:hive_ce_flutter/adapters.dart';
 
 import 'fn/fn.dart';
+import 'screens/login/mdns_lookup.dart';
 
 @pragma('vm:entry-point')
 void printHello() async {
@@ -14,6 +15,13 @@ void printHello() async {
   final box = await Hive.openBox<dynamic>(localSettingsHiveBox);
   String? token = box.get(localSettingsHiveLoginToken);
   String? remoteHost = box.get(localSettingsHiveRemoteHost);
+
+  if (remoteHost != null && remoteHost.contains('.local')) {
+    final uri = Uri.tryParse(remoteHost);
+    if (uri != null) {
+      await resolveAndCacheMdnsHost(uri.host);
+    }
+  }
 
   if (token != null && remoteHost != null) {
     final tagsResult =

@@ -7,8 +7,11 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
+	"net"
 	"net/http"
+	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/adrg/xdg"
@@ -16,6 +19,7 @@ import (
 	"github.com/forgetaboutitapp/forget-about-it/server/cmd/server/apis/do"
 	dbUtils "github.com/forgetaboutitapp/forget-about-it/server/pkg/db_utils"
 	"github.com/forgetaboutitapp/forget-about-it/server/protobufs-build/client_server/v1/client_serverv1connect"
+	"github.com/hashicorp/mdns"
 	"github.com/rs/cors"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -50,6 +54,31 @@ func main() {
 	if address == "" {
 		address = ":80"
 	}
+
+	port := 80
+	if _, portStr, err := net.SplitHostPort(address); err == nil {
+		if p, err := strconv.Atoi(portStr); err == nil {
+			port = p
+		}
+	} else if p, err := strconv.Atoi(strings.TrimPrefix(address, ":")); err == nil {
+		port = p
+	}
+
+	host, _ := os.Hostname()
+	info := []string{"Forget About It Server"}
+	service, err := mdns.NewMDNSService(host, "_forgetaboutit._tcp", "", "", port, nil, info)
+	if err != nil {
+		log.Printf("Failed to create mDNS service: %v", err)
+	} else {
+		mdnsServer, err := mdns.NewServer(&mdns.Config{Zone: service})
+		if err != nil {
+			log.Printf("Failed to start mDNS server: %v", err)
+		} else {
+			defer mdnsServer.Shutdown()
+			fmt.Printf("Registered mDNS service _forgetaboutit._tcp for %s on port %d\n", host, port)
+		}
+	}
+
 	fmt.Printf("Starting server on address %s\n", address)
 	corsOptions := cors.Options{
 		AllowPrivateNetwork: true,

@@ -65,3 +65,5 @@ algorithms-built/*
 
 **/protobufs-build
 frontend/dist/**
+tmp-release/**
+releases/**
