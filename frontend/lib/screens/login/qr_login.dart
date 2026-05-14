@@ -1,6 +1,4 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../fn/fn.dart';
 import '../../state/login.dart';
@@ -52,7 +50,10 @@ class QrLogin extends HookConsumerWidget {
                 }
                 Uri parsedUri;
                 try {
-                  parsedUri = Uri.parse(uri);
+                  final normalized = uri.contains('://')
+                      ? uri
+                      : 'http://$uri';
+                  parsedUri = Uri.parse(normalized);
                 } catch (_) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Invalid QR code: malformed server host.')),
