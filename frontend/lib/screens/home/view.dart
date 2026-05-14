@@ -39,19 +39,19 @@ class HomeScreen extends HookConsumerWidget {
             onSelected: (fn) => fn(),
             itemBuilder: (context) => [
               PopupMenuItem(
-                value: () => context.go(BulkEditScreen.location),
+                value: () => context.push(BulkEditScreen.location),
                 child: Text(
                   'Bulk Edit',
                 ),
               ),
               PopupMenuItem(
-                value: () => context.go(SettingsScreen.location),
+                value: () => context.push(SettingsScreen.location),
                 child: Text(
                   'Settings',
                 ),
               ),
               PopupMenuItem(
-                value: () => context.go(Stats.location),
+                value: () => context.push(Stats.location),
                 child: Text(
                   'Statistics',
                 ),
@@ -163,7 +163,7 @@ class TagsView extends HookWidget {
                     ? null
                     : () {
                         canRunResponsive.value
-                            ? context.go(
+                            ? context.push(
                                 Uri(
                                   path: QuizView.location,
                                   queryParameters: {

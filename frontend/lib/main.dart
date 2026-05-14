@@ -61,69 +61,88 @@ class MainApp extends HookConsumerWidget {
       final settingsBox = Hive.box(localSettingsHiveBox);
       if (settingsBox.get(localSettingsHiveLoginToken) == null) {
         return LoginScreen.location;
-      } else if (state.fullPath != LoginScreen.location) {
-        return state.uri.toString();
-      } else {
+      } else if (state.fullPath == LoginScreen.location) {
         return HomeScreen.location;
       }
+      return null;
     },
     routes: [
-      GoRoute(
-        path: HomeScreen.location,
-        builder: (context, state) => HomeScreen(
-            logOut: () {},
-            remoteServer: _getRemoteServer().remoteHost,
-            token: _getRemoteServer().token),
-      ),
-      GoRoute(
-        path: BulkEditScreen.location,
-        builder: (context, state) => BulkEditScreen(
-          remoteServer: _getRemoteServer().remoteHost,
-          token: _getRemoteServer().token,
-          logOut: () {},
-        ),
-      ),
       GoRoute(
         path: LoginScreen.location,
         builder: (context, state) => LoginScreen(),
       ),
-      GoRoute(
-        path: Stats.location,
-        builder: (context, state) => Stats(
-            remoteServer: _getRemoteServer().remoteHost,
-            token: _getRemoteServer().token,
-            logOut: () {}),
-      ),
-      GoRoute(
-        path: QuizView.location,
-        builder: (context, state) => QuizView(
-          remoteServer: _getRemoteServer().remoteHost,
-          token: _getRemoteServer().token,
-          logOut: () {},
-          tags: state.uri.queryParametersAll,
-          isDarkMode: Hive.box(
-            localSettingsHiveBox,
-          ).get(localSettingsHiveDarkTheme, defaultValue: false),
-        ),
-      ),
-      GoRoute(
-        path: SettingsScreen.location,
-        builder: (context, state) => SettingsScreen(
-          token: _getRemoteServer().token,
-          remoteServer: _getRemoteServer().remoteHost,
-          logout: () {},
-          curDarkMode: Hive.box(
-            localSettingsHiveBox,
-          ).get(localSettingsHiveDarkTheme, defaultValue: false),
-          switchDarkMode: (_) async {
-            final v = Hive.box(
-              localSettingsHiveBox,
-            ).get(localSettingsHiveDarkTheme, defaultValue: false);
-            await Hive.box(
-              localSettingsHiveBox,
-            ).put(localSettingsHiveDarkTheme, !v);
-          },
-        ),
+      ShellRoute(
+        builder: (context, state, child) => child,
+        routes: [
+          GoRoute(
+            path: HomeScreen.location,
+            pageBuilder: (context, state) => MaterialPage(
+              key: state.pageKey,
+              child: HomeScreen(
+                logOut: () {},
+                remoteServer: _getRemoteServer().remoteHost,
+                token: _getRemoteServer().token,
+              ),
+            ),
+            routes: [
+              GoRoute(
+                path: BulkEditScreen.location.replaceFirst('/', ''),
+                pageBuilder: (context, state) => MaterialPage(
+                  key: state.pageKey,
+                  child: BulkEditScreen(
+                    remoteServer: _getRemoteServer().remoteHost,
+                    token: _getRemoteServer().token,
+                    logOut: () {},
+                  ),
+                ),
+              ),
+              GoRoute(
+                path: Stats.location.replaceFirst('/', ''),
+                pageBuilder: (context, state) => MaterialPage(
+                  key: state.pageKey,
+                  child: Stats(
+                    remoteServer: _getRemoteServer().remoteHost,
+                    token: _getRemoteServer().token,
+                    logOut: () {},
+                  ),
+                ),
+              ),
+              GoRoute(
+                path: QuizView.location.replaceFirst('/', ''),
+                pageBuilder: (context, state) => MaterialPage(
+                  key: state.pageKey,
+                  child: QuizView(
+                    remoteServer: _getRemoteServer().remoteHost,
+                    token: _getRemoteServer().token,
+                    logOut: () {},
+                    tags: state.uri.queryParametersAll,
+                    isDarkMode: Hive.box(localSettingsHiveBox)
+                        .get(localSettingsHiveDarkTheme, defaultValue: false),
+                  ),
+                ),
+              ),
+              GoRoute(
+                path: SettingsScreen.location.replaceFirst('/', ''),
+                pageBuilder: (context, state) => MaterialPage(
+                  key: state.pageKey,
+                  child: SettingsScreen(
+                    token: _getRemoteServer().token,
+                    remoteServer: _getRemoteServer().remoteHost,
+                    logout: () {},
+                    curDarkMode: Hive.box(localSettingsHiveBox)
+                        .get(localSettingsHiveDarkTheme, defaultValue: false),
+                    switchDarkMode: (_) async {
+                      final v = Hive.box(localSettingsHiveBox)
+                          .get(localSettingsHiveDarkTheme, defaultValue: false);
+                      await Hive.box(localSettingsHiveBox)
+                          .put(localSettingsHiveDarkTheme, !v);
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     ],
   );
