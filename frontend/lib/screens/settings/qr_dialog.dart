@@ -88,6 +88,7 @@ class QRDialog extends HookWidget {
                     remoteHost: remoteHost,
                     uuid: decode['new-uuid'],
                   ),
+                LoginMethod.qrCode => const SizedBox(),
               },
             ),
             SegmentedButton(
@@ -104,6 +105,7 @@ class QRDialog extends HookWidget {
                 selected: switch (show12Words.value) {
                   LoginMethod.twelveWords => {1},
                   LoginMethod.token => {2},
+                  LoginMethod.qrCode => {1},
                 },
                 onSelectionChanged: (v) =>
                     switch (v.map((e) => e).toList()[0]) {
