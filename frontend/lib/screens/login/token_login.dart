@@ -8,6 +8,7 @@ import '../../fn/fn.dart';
 import '../../state/login.dart';
 import 'submit_type.dart';
 import 'mdns_lookup.dart';
+import 'qr_scanner.dart';
 
 class TokenLogin extends HookConsumerWidget {
   final String? remoteURL;
@@ -72,6 +73,31 @@ class TokenLogin extends HookConsumerWidget {
               decoration: InputDecoration(
                 border: OutlineInputBorder(),
                 labelText: 'Token',
+                suffixIcon: defaultTargetPlatform == TargetPlatform.android
+                    ? IconButton(
+                        icon: const Icon(Icons.qr_code_scanner),
+                        tooltip: 'Scan QR Code',
+                        onPressed: () async {
+                          final code = await Navigator.push<String?>(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const QrScannerPage()),
+                          );
+                          if (code != null) {
+                            final parts = code.split(';');
+                            if (parts.length >= 2) {
+                              urlController.text = parts[0];
+                              urlText.value = parts[0];
+                              tokenController.text = parts[1];
+                              tokenText.value = parts[1];
+                            } else {
+                              tokenController.text = code;
+                              tokenText.value = code;
+                            }
+                          }
+                        },
+                      )
+                    : null,
               ),
             ),
           ),

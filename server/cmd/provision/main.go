@@ -93,7 +93,8 @@ func SetOrGetHost(ctx context.Context, q *sql_queries.Queries, hostFlagValue str
 
 	host, err := q.GetConfigValue(ctx, "host")
 	if errors.Is(err, sql.ErrNoRows) {
-		return "", ErrHostRequired
+		hostname, _ := os.Hostname()
+		return fmt.Sprintf("%s.local:80", hostname), nil
 	}
 	if err != nil {
 		return "", err
