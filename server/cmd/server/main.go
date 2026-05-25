@@ -78,7 +78,18 @@ func main() {
 	corsOptions := cors.Options{
 		AllowPrivateNetwork: true,
 		AllowedOrigins:      []string{"*"},
-		AllowedHeaders:      []string{"*"},
+		AllowedMethods:      []string{"GET", "POST", "OPTIONS", "HEAD"},
+		AllowedHeaders: []string{
+			"Content-Type",
+			"X-User-Agent",
+			"X-Grpc-Web",
+			"X-Grpc-Web-Proto",
+			"Grpc-Timeout",
+			"Authorization",
+			"X-Requested-With",
+		},
+		AllowCredentials: false,
+		MaxAge: 600,
 	}
 	log.Fatal(http.ListenAndServe(listenAddress, h2c.NewHandler(cors.New(corsOptions).Handler(http.DefaultServeMux), &http2.Server{})))
 

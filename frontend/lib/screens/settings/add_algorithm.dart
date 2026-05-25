@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 
 import 'package:forget_about_it/protobufs-build/client_server/v1/client_to_server.pbgrpc.dart';
 
@@ -10,6 +11,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import '../../fn/fn.dart';
+import '../../screens/login/view.dart';
 import '../../protobufs-build/client_server/v1/client_to_server.pb.dart'
     as client_to_server;
 import 'models/uploaded_file_state.dart';
@@ -137,11 +139,41 @@ class AddAlgorithm extends HookWidget {
                           );
                         }
                         if (shouldUpload) {
+                          if (token.trim().isEmpty) {
+                            if (context.mounted) {
+                              final doLogin = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: Text('Not logged in'),
+                                  content: Text(
+                                      'You must be logged in to upload an algorithm. Do you want to log in now?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(false),
+                                      child: Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(true),
+                                      child: Text('Log In'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (doLogin == true && context.mounted) {
+                                Navigator.of(context).push(MaterialPageRoute(
+                                  builder: (c) => LoginScreen(),
+                                ));
+                              }
+                            }
+                            return;
+                          }
                           isUploading.value = true;
+                          developer.log('Uploading algorithm with token: $token');
                           final p = await ForgetAboutItServiceClient(
                                   createGrpcChannel(Uri.parse(remoteServer)))
                               .uploadAlgorithm(
                                   client_to_server.UploadAlgorithmRequest(
+                            token: token,
                             algorithm: data,
                           ));
                           if (p.hasError() && context.mounted) {

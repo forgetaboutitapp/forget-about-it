@@ -57,6 +57,26 @@ class SettingsScreen extends HookConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('Settings'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.info_outline),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (c) => AlertDialog(
+                  title: Text('Debug Info'),
+                  content: Text('token: $token\nremoteServer: $remoteServer'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(c).pop(),
+                      child: Text('Ok'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: stillWaitingForRemoteServer.value
           ? Center(child: CircularProgressIndicator())
@@ -109,7 +129,8 @@ class SettingsScreen extends HookConsumerWidget {
                             onChanged: (int? v) async {
                               stillWaitingForRemoteServer.value = true;
                               final client = await ForgetAboutItServiceClient(
-                                      createGrpcChannel(Uri.parse(remoteServer)))
+                                      createGrpcChannel(
+                                          Uri.parse(remoteServer)))
                                   .getRemoteSettings(
                                       GetRemoteSettingsRequest(token: token));
                               if (client.hasError()) {
@@ -132,7 +153,8 @@ class SettingsScreen extends HookConsumerWidget {
                                 : () async {
                                     final client =
                                         await ForgetAboutItServiceClient(
-                                                createGrpcChannel(Uri.parse(remoteServer)))
+                                                createGrpcChannel(
+                                                    Uri.parse(remoteServer)))
                                             .removeAlgorithm(
                                       RemoveAlgorithmRequest(
                                           token: token,
@@ -217,7 +239,8 @@ class SettingsScreen extends HookConsumerWidget {
                                       : () async {
                                           final res =
                                               await ForgetAboutItServiceClient(
-                                                      createGrpcChannel(Uri.parse(
+                                                      createGrpcChannel(
+                                                          Uri.parse(
                                                               remoteServer)))
                                                   .removeLogin(
                                             RemoveLoginRequest(
