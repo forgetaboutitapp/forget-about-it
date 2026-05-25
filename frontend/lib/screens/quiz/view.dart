@@ -69,6 +69,8 @@ class QuizView extends HookConsumerWidget {
               QuizQuestionStateData(
                 :final question,
                 :final answer,
+                :final explanation,
+                :final memoHint,
                 :final id,
                 :final questionType,
                 :final dueCards,
@@ -79,6 +81,8 @@ class QuizView extends HookConsumerWidget {
                   remoteServer: remoteServer,
                   question: question,
                   answer: answer,
+                  explanation: explanation,
+                  memoHint: memoHint,
                   id: id,
                   questionType: questionType,
                   tagsSet: tagsSet,
@@ -115,6 +119,8 @@ class ErrorScreen extends StatelessWidget {
 class DisplayQuestion extends HookConsumerWidget {
   final String question;
   final String answer;
+  final String explanation;
+  final String memoHint;
   final int id;
   final ISet<String>? tagsSet;
   final String token;
@@ -129,6 +135,8 @@ class DisplayQuestion extends HookConsumerWidget {
     super.key,
     required this.question,
     required this.answer,
+    required this.explanation,
+    required this.memoHint,
     required this.id,
     required this.tagsSet,
     required this.remoteServer,
@@ -182,7 +190,8 @@ class DisplayQuestion extends HookConsumerWidget {
                         selectable: true,
                       )
                     : Markdown(
-                        data: answer,
+                        data:
+                            '$answer\n\n# Explanation\n\n$explanation\n\n# Hint\n$memoHint',
                         selectable: true,
                       ),
               ),

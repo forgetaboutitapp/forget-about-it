@@ -25,6 +25,8 @@ sealed class QuizQuestionState with _$QuizQuestionState {
     required int id,
     required String question,
     required String answer,
+    required String explanation,
+    required String memoHint,
     required QuestionType questionType,
     required int newCards,
     required int dueCards,
@@ -133,6 +135,8 @@ class QuizQuestions extends _$QuizQuestions {
         id: question.flashcard.id,
         question: question.flashcard.question,
         answer: question.flashcard.answer,
+        explanation: question.flashcard.explanation,
+        memoHint: question.flashcard.memoHint,
         questionType: switch (question.typeOfQuestion) {
           server_to_client_enums
                 .GetNextQuestion_TypeOfQuestion.TYPE_OF_QUESTION_NEW =>

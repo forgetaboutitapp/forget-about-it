@@ -14,12 +14,12 @@ Future<Result<QuizQuestionStateData>> getNextQuestion(
     Function logOut,
     ISet<String> tagsQuery,
     bool getNewQuestion) async {
-  final client = await ForgetAboutItServiceClient(
-          createGrpcChannel(Uri.parse(remoteHost)))
-      .getNextQuestion(GetNextQuestionRequest(
-          token: token,
-          tags: tagsQuery.toList(),
-          getNewQuestion: getNewQuestion));
+  final client =
+      await ForgetAboutItServiceClient(createGrpcChannel(Uri.parse(remoteHost)))
+          .getNextQuestion(GetNextQuestionRequest(
+              token: token,
+              tags: tagsQuery.toList(),
+              getNewQuestion: getNewQuestion));
   if (client.hasError()) {
     if (client.error.shouldLogOut) {
       logOut();
@@ -52,6 +52,8 @@ Future<Result<QuizQuestionStateData>> getNextQuestion(
       server_to_client_enums.GetNextQuestion_TypeOfQuestion() =>
         throw UnimplementedError(),
     },
+    explanation: question.flashcard.explanation,
+    memoHint: question.flashcard.memoHint,
     newCards: question.newQuestions,
     dueCards: question.dueQuestions,
     nonDueCards: question.nonDueQuestions,
