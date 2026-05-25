@@ -127,15 +127,20 @@ class SettingsScreen extends HookConsumerWidget {
                             value: e.algorithmID,
                             groupValue: remoteSettings.defaultAlgorithm ?? 0,
                             onChanged: (int? v) async {
+                              if (v == null) return;
                               stillWaitingForRemoteServer.value = true;
-                              final client = await ForgetAboutItServiceClient(
+                              final res = await ForgetAboutItServiceClient(
                                       createGrpcChannel(
                                           Uri.parse(remoteServer)))
-                                  .getRemoteSettings(
-                                      GetRemoteSettingsRequest(token: token));
-                              if (client.hasError()) {
+                                  .setDefaultAlgorithm(
+                                SetDefaultAlgorithmRequest(
+                                  token: token,
+                                  algorithmId: v,
+                                ),
+                              );
+                              if (res.hasError()) {
                                 if (context.mounted) {
-                                  showError(context, e.toString());
+                                  showError(context, res.error.error);
                                 }
                               } else {
                                 if (context.mounted) {
