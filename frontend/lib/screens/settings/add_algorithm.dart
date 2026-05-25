@@ -46,6 +46,7 @@ class AddAlgorithm extends HookWidget {
                       FilePickerResult? result = await FilePicker.pickFiles(
                         type: FileType.custom,
                         allowedExtensions: ['json'],
+                        withData: true,
                       );
                       if (result != null && result.files.length == 1) {
                         String? dataAsString;
