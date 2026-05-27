@@ -4,6 +4,14 @@ import 'dart:developer';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class NotificationService {
+  static final NotificationService _instance = NotificationService._internal();
+  
+  factory NotificationService() {
+    return _instance;
+  }
+  
+  NotificationService._internal();
+  
   final notificationsPlugin = FlutterLocalNotificationsPlugin();
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;

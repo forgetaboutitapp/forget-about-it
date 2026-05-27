@@ -28,8 +28,9 @@ void main() async {
   await Hive.initFlutter();
   await Hive.openBox<dynamic>(localSettingsHiveBox);
   usePathUrlStrategySafe();
-  
-  final remoteHost = Hive.box(localSettingsHiveBox).get(localSettingsHiveRemoteHost) as String?;
+
+  final remoteHost = Hive.box(localSettingsHiveBox)
+      .get(localSettingsHiveRemoteHost) as String?;
   if (remoteHost != null && remoteHost.contains('.local')) {
     final uri = Uri.tryParse(remoteHost);
     if (uri != null) {

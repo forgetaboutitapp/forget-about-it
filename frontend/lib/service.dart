@@ -4,14 +4,14 @@ import '../../screens/home/service.dart';
 import '../../screens/quiz/service.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:hive_ce_flutter/adapters.dart';
-
+import 'dart:developer' as developer;
 import 'fn/fn.dart';
 import 'screens/login/mdns_lookup.dart';
 
 @pragma('vm:entry-point')
 void printHello() async {
   await Hive.initFlutter();
-
+  developer.log('starting call');
   final box = await Hive.openBox<dynamic>(localSettingsHiveBox);
   String? token = box.get(localSettingsHiveLoginToken);
   String? remoteHost = box.get(localSettingsHiveRemoteHost);
@@ -25,7 +25,7 @@ void printHello() async {
 
   if (token != null && remoteHost != null) {
     final tagsResult =
-        await (await (await getAllTags(remoteHost, token, () => {}))
+        await (await (await getAllTags(token, remoteHost, () => {}))
                 .doFlatMap((tags) async {
       return await getNextQuestion(remoteHost, token, () => {},
           tags.$1.map((e) => e.tag).toISet(), false);
