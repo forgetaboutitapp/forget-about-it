@@ -25,13 +25,10 @@ jobs:
           cache: gradle
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses >/dev/null
-
-      - name: Install Android compile SDK
-        run: sdkmanager "platforms;android-37"
+        uses: android-actions/setup-android@v4
+        with:
+          accept-android-sdk-licenses: true
+          packages: 'platforms;android-36'
 
       - name: Make Gradle executable
         run: chmod +x gradlew
@@ -41,7 +38,7 @@ jobs:
 
   instrumentation-tests:
     name: Android instrumentation tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     defaults:
       run:
         working-directory: android-app
@@ -57,21 +54,25 @@ jobs:
           cache: gradle
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses >/dev/null
-
-      - name: Install Android compile SDK
-        run: sdkmanager "platforms;android-37"
+        uses: android-actions/setup-android@v4
+        with:
+          accept-android-sdk-licenses: true
+          packages: 'platforms;android-36'
 
       - name: Make Gradle executable
         run: chmod +x gradlew
+
+      - name: Enable KVM for the emulator
+        run: |
+          sudo chmod 666 /dev/kvm
+          ls -l /dev/kvm
 
       - name: Run Compose instrumentation tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
+          target: google_atd
           arch: x86_64
-          profile: Pixel_2
+          disable-linux-hw-accel: false
+          emulator-options: '-no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics'
           script: cd android-app && ./gradlew connectedDebugAndroidTest --no-daemon

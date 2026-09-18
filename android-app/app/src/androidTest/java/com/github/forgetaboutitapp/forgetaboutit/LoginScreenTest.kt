@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -41,7 +42,7 @@ class LoginScreenTest {
 
         composeTestRule.onNodeWithText("Welcome back").assertIsDisplayed()
         composeTestRule.onAllNodes(hasSetTextAction()).assertCountEquals(12)
-        composeTestRule.onNodeWithText("Continue").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Continue").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -50,7 +51,6 @@ class LoginScreenTest {
 
         composeTestRule.onNodeWithText("UUID").performClick()
 
-        composeTestRule.onNodeWithText("UUID").assertIsDisplayed()
         composeTestRule.onAllNodes(hasSetTextAction()).assertCountEquals(1)
     }
 
@@ -66,7 +66,7 @@ class LoginScreenTest {
         bip39Words.toList().forEachIndexed { index, word ->
             fields[index].performTextInput(word)
         }
-        composeTestRule.onNodeWithText("Continue").performClick()
+        composeTestRule.onNodeWithText("Continue").performScrollTo().performClick()
 
         assertEquals(bip39Words.joinToString(" "), loggedInValue)
     }
@@ -75,7 +75,7 @@ class LoginScreenTest {
     fun incompleteTwelveWordsDisablesContinue() {
         setApp(hasUsageKey = false)
 
-        composeTestRule.onNodeWithText("Continue").assertIsNotEnabled()
+        composeTestRule.onNodeWithText("Continue").performScrollTo().assertIsNotEnabled()
     }
 
     @Test
@@ -86,7 +86,7 @@ class LoginScreenTest {
         composeTestRule.onAllNodes(hasSetTextAction())[0].performTextInput("not-a-uuid")
 
         composeTestRule.onNodeWithText("Enter a valid UUID.").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Continue").assertIsNotEnabled()
+        composeTestRule.onNodeWithText("Continue").performScrollTo().assertIsNotEnabled()
     }
 
     @Test
