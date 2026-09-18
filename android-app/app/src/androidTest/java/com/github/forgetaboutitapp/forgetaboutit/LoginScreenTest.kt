@@ -2,8 +2,8 @@ package com.github.forgetaboutitapp.forgetaboutit
 
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasSetTextAction
-import androidx.compose.ui.test.onAllNodes
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -39,19 +39,19 @@ class LoginScreenTest {
     fun loginScreenShowsTwelveWordFields() {
         setApp(hasUsageKey = false)
 
-        onNodeWithText("Welcome back").assertIsDisplayed()
-        onAllNodes(hasSetTextAction()).assertCountEquals(12)
-        onNodeWithText("Continue").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Welcome back").assertIsDisplayed()
+        composeTestRule.onAllNodes(hasSetTextAction()).assertCountEquals(12)
+        composeTestRule.onNodeWithText("Continue").assertIsDisplayed()
     }
 
     @Test
     fun uuidOptionShowsUuidField() {
         setApp(hasUsageKey = false)
 
-        onNodeWithText("UUID").performClick()
+        composeTestRule.onNodeWithText("UUID").performClick()
 
-        onNodeWithText("UUID").assertIsDisplayed()
-        onAllNodes(hasSetTextAction()).assertCountEquals(1)
+        composeTestRule.onNodeWithText("UUID").assertIsDisplayed()
+        composeTestRule.onAllNodes(hasSetTextAction()).assertCountEquals(1)
     }
 
     @Test
@@ -62,21 +62,39 @@ class LoginScreenTest {
             onLogin = { loggedInValue = it }
         )
 
-        val fields = onAllNodes(hasSetTextAction())
+        val fields = composeTestRule.onAllNodes(hasSetTextAction())
         bip39Words.toList().forEachIndexed { index, word ->
             fields[index].performTextInput(word)
         }
-        onNodeWithText("Continue").performClick()
+        composeTestRule.onNodeWithText("Continue").performClick()
 
         assertEquals(bip39Words.joinToString(" "), loggedInValue)
+    }
+
+    @Test
+    fun incompleteTwelveWordsDisablesContinue() {
+        setApp(hasUsageKey = false)
+
+        composeTestRule.onNodeWithText("Continue").assertIsNotEnabled()
+    }
+
+    @Test
+    fun invalidUuidShowsErrorAndDisablesContinue() {
+        setApp(hasUsageKey = false)
+
+        composeTestRule.onNodeWithText("UUID").performClick()
+        composeTestRule.onAllNodes(hasSetTextAction())[0].performTextInput("not-a-uuid")
+
+        composeTestRule.onNodeWithText("Enter a valid UUID.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Continue").assertIsNotEnabled()
     }
 
     @Test
     fun usageKeyShowsMainScreen() {
         setApp(hasUsageKey = true)
 
-        onNodeWithText("Main screen").assertIsDisplayed()
-        onNodeWithText("You are signed in.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Main screen").assertIsDisplayed()
+        composeTestRule.onNodeWithText("You are signed in.").assertIsDisplayed()
     }
 
     private fun setApp(

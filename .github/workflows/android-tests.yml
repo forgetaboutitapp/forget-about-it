@@ -1,0 +1,77 @@
+name: Android Tests
+
+on:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    name: JVM unit tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android-app
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses >/dev/null
+
+      - name: Install Android compile SDK
+        run: sdkmanager "platforms;android-37"
+
+      - name: Make Gradle executable
+        run: chmod +x gradlew
+
+      - name: Run JVM unit tests
+        run: ./gradlew testDebugUnitTest --no-daemon
+
+  instrumentation-tests:
+    name: Android instrumentation tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android-app
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses >/dev/null
+
+      - name: Install Android compile SDK
+        run: sdkmanager "platforms;android-37"
+
+      - name: Make Gradle executable
+        run: chmod +x gradlew
+
+      - name: Run Compose instrumentation tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: Pixel_2
+          script: cd android-app && ./gradlew connectedDebugAndroidTest --no-daemon

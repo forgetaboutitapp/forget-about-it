@@ -58,6 +58,9 @@ private fun LoginScreen(
     var uuid by rememberSaveable { mutableStateOf("") }
     var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
     val focusRequesters = remember { List(12) { FocusRequester() } }
+    val wordsAreValid = words.all { it.isNotBlank() && bitcoinWords.contains(it) }
+    val uuidIsValid = uuid.trim().isValidUuid()
+    val canSubmit = if (selectedMethod == LoginMethod.WORDS) wordsAreValid else uuidIsValid
 
     Column(
         modifier = modifier
@@ -112,6 +115,12 @@ private fun LoginScreen(
                     .fillMaxWidth()
                     .padding(top = 16.dp),
                 label = { Text("UUID") },
+                isError = uuid.isNotBlank() && !uuidIsValid,
+                supportingText = if (uuid.isNotBlank() && !uuidIsValid) {
+                    { Text("Enter a valid UUID.") }
+                } else {
+                    null
+                },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
                 singleLine = true
             )
@@ -128,6 +137,7 @@ private fun LoginScreen(
         }
 
         Button(
+            enabled = canSubmit,
             onClick = {
                 val value = if (selectedMethod == LoginMethod.WORDS) {
                     words.joinToString(" ")
